@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import logo from '../../assects/logo.png';
 
 const LoginPage = () => {
   const { login } = useAuth();
@@ -20,25 +21,47 @@ const LoginPage = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.email || !form.password) {
-      setError('Please enter your email and password.');
-      return;
+  e.preventDefault();
+
+  if (!form.email || !form.password) {
+    setError("Please enter your email and password.");
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const data = await login(form.email, form.password);
+
+    const role = data.roles[0];
+
+    if (role === "SUPER_ADMIN") {
+      navigate("/super-admin/dashboard", { replace: true });
     }
-    setLoading(true);
-    try {
-      await login(form.email, form.password);
-      navigate(from, { replace: true });
-    } catch (err) {
-      const msg =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        'Invalid credentials. Please try again.';
-      setError(msg);
-    } finally {
-      setLoading(false);
+
+    else if (role === "SCHOOL_ADMIN") {
+      navigate("/school-admin/dashboard", { replace: true });
     }
-  };
+
+    else if (role === "TEACHER") {
+      navigate("/teachers/dashboard", { replace: true });
+    }
+
+    else if (role === "PARENT") {
+      navigate("/parents/dashboard", { replace: true });
+    }
+
+  } catch (err) {
+    const msg =
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      "Invalid credentials";
+
+    setError(msg);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <>
@@ -68,6 +91,7 @@ const LoginPage = () => {
           background: #0c0e14;
         }
 
+        
         /* ── LEFT PANEL ── */
         .left-panel {
           position: relative;
@@ -78,17 +102,23 @@ const LoginPage = () => {
           background: linear-gradient(135deg, #0f1117 0%, #141820 100%);
           border-right: 1px solid rgba(200,169,110,0.12);
           overflow: hidden;
-        }
-        .left-panel::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background:
+          }
+          .left-panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
             radial-gradient(ellipse 60% 40% at 20% 80%, rgba(200,169,110,0.08) 0%, transparent 70%),
             radial-gradient(ellipse 40% 60% at 80% 10%, rgba(100,130,200,0.06) 0%, transparent 70%);
-          pointer-events: none;
-        }
-
+            pointer-events: none;
+            }
+            
+            .brand-logo {
+              width: 50%;
+              height: 50%;
+              object-fit: contain;
+            }
+              
         .brand-mark {
           display: flex;
           align-items: center;
@@ -313,10 +343,10 @@ const LoginPage = () => {
         {/* ── LEFT PANEL ── */}
         <div className="left-panel">
           <div className="brand-mark">
-            <div className="brand-icon">🏫</div>
+            <img src={logo} alt="SchoolMS Logo" className="brand-logo" />
             <span className="brand-name">SchoolMS</span>
           </div>
-
+        
           <div className="hero-text">
             <p className="hero-eyebrow">School Management System</p>
             <h1 className="hero-headline">

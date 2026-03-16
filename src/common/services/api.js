@@ -7,10 +7,16 @@ const API = axios.create({
   }
 });
 
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+API.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("accessToken"); // FIXED
+    console.log("Attaching token to request:", token); // DEBUG LOG
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 export default API;

@@ -29,7 +29,7 @@ export default function Sidebar() {
     <div className="w-64 bg-white shadow-lg min-h-screen flex flex-col">
 
       <div className="p-6 border-b">
-        <h1 className="text-xl font-bold text-white-600">School SaaS</h1>
+        <h1 className="text-2xl font-bold text-blue-600">School SaaS</h1>
       </div>
 
       <nav className="flex-1 p-4 space-y-2">
@@ -44,11 +44,12 @@ export default function Sidebar() {
             <Link
               key={index}
               to={item.path}
-              className={`flex items-center gap-3 p-3 rounded-lg transition ${
-                active
-                  ? "bg-white-500 text-white"
-                  : "text-gray-700 hover:bg-gray-100"
-              }`}
+              className={`flex items-center gap-3 p-3 rounded-lg transition
+                ${
+                  active
+                    ? "bg-blue-500 text-white"
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}
             >
               <Icon size={20} />
               {item.name}
@@ -58,8 +59,9 @@ export default function Sidebar() {
        
       </nav>
 
+        {/* Logout */}
       <div className="p-4 border-t">
-        <button className="flex items-center gap-2 text-red-500">
+        <button className="flex items-center gap-3 text-red-500 hover:bg-red-50 p-3 w-full rounded-lg">
           <LogOut size={20} />
           Logout
         </button>

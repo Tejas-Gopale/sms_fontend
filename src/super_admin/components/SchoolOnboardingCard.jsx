@@ -3,6 +3,8 @@ import axios from "axios";
 
 export default function SchoolOnboardingCard() {
 
+  const [loading,setLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     schoolName: "",
     schoolEmail: "",
@@ -29,16 +31,20 @@ export default function SchoolOnboardingCard() {
   });
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+
+    const { name,value,type,checked } = e.target;
 
     setFormData({
       ...formData,
       [name]: type === "checkbox" ? checked : value
     });
+
   };
 
   const handleSubmit = async (e) => {
+
     e.preventDefault();
+    setLoading(true);
 
     try {
 
@@ -49,71 +55,193 @@ export default function SchoolOnboardingCard() {
 
       alert("School Onboarded Successfully");
 
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+
+      console.error(err);
       alert("Error onboarding school");
+
     }
+
+    setLoading(false);
+
   };
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-lg">
 
-      <h2 className="text-xl font-bold mb-4">
-        Onboard New School
+    <div className="max-w-6xl mx-auto bg-white p-8 rounded-2xl shadow-xl transition-all duration-300 hover:shadow-2xl">
+
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">
+        School Onboarding
       </h2>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-8"
+      >
 
-        <input name="schoolName" placeholder="School Name" onChange={handleChange} className="input"/>
-        <input name="schoolEmail" placeholder="School Email" onChange={handleChange} className="input"/>
+        {/* SCHOOL DETAILS */}
 
-        <input name="schoolCode" placeholder="School Code" onChange={handleChange} className="input"/>
-        <input name="subDomain" placeholder="Sub Domain" onChange={handleChange} className="input"/>
+        <div>
 
-        <input name="boardType" placeholder="Board Type" onChange={handleChange} className="input"/>
-        <input name="establishedYear" placeholder="Established Year" onChange={handleChange} className="input"/>
+          <h3 className="text-lg font-semibold mb-4 text-gray-700">
+            School Details
+          </h3>
 
-        <input name="phoneNumber" placeholder="Phone Number" onChange={handleChange} className="input"/>
-        <input name="websiteUrl" placeholder="Website URL" onChange={handleChange} className="input"/>
+          <div className="grid md:grid-cols-3 gap-4">
 
-        <input name="city" placeholder="City" onChange={handleChange} className="input"/>
-        <input name="state" placeholder="State" onChange={handleChange} className="input"/>
+            <Input name="schoolName" placeholder="School Name" handleChange={handleChange}/>
+            <Input name="schoolEmail" placeholder="School Email" handleChange={handleChange}/>
+            <Input name="schoolCode" placeholder="School Code" handleChange={handleChange}/>
 
-        <input name="country" placeholder="Country" onChange={handleChange} className="input"/>
-        <input name="pincode" placeholder="Pincode" onChange={handleChange} className="input"/>
+            <Input name="subDomain" placeholder="Sub Domain" handleChange={handleChange}/>
+            <Input name="boardType" placeholder="Board Type (CBSE/ICSE)" handleChange={handleChange}/>
+            <Input name="establishedYear" placeholder="Established Year" handleChange={handleChange}/>
 
-        <input name="adminFullName" placeholder="Admin Name" onChange={handleChange} className="input"/>
-        <input name="adminEmail" placeholder="Admin Email" onChange={handleChange} className="input"/>
+            <Input name="phoneNumber" placeholder="Phone Number" handleChange={handleChange}/>
+            <Input name="websiteUrl" placeholder="Website URL" handleChange={handleChange}/>
 
-        <input name="adminPassword" placeholder="Admin Password" onChange={handleChange} className="input"/>
-        <input name="adminContactNumber" placeholder="Admin Contact" onChange={handleChange} className="input"/>
+          </div>
 
-        <select name="subscriptionPlan" onChange={handleChange} className="input">
-          <option>BASIC</option>
-          <option>STANDARD</option>
-          <option>PREMIUM</option>
-        </select>
+        </div>
 
-        <input name="studentCapacity" placeholder="Student Capacity" onChange={handleChange} className="input"/>
 
-        <label className="flex gap-2">
-          <input type="checkbox" name="enableSms" onChange={handleChange}/>
-          Enable SMS
-        </label>
+        {/* ADDRESS */}
 
-        <label className="flex gap-2">
-          <input type="checkbox" name="enableMobileAppAccess" defaultChecked onChange={handleChange}/>
-          Enable Mobile App
-        </label>
+        <div>
+
+          <h3 className="text-lg font-semibold mb-4 text-gray-700">
+            Address Details
+          </h3>
+
+          <div className="grid md:grid-cols-3 gap-4">
+
+            <Input name="addressLine1" placeholder="Address Line 1" handleChange={handleChange}/>
+            <Input name="addressLine2" placeholder="Address Line 2" handleChange={handleChange}/>
+            <Input name="city" placeholder="City" handleChange={handleChange}/>
+
+            <Input name="state" placeholder="State" handleChange={handleChange}/>
+            <Input name="country" placeholder="Country" handleChange={handleChange}/>
+            <Input name="pincode" placeholder="Pincode" handleChange={handleChange}/>
+
+          </div>
+
+        </div>
+
+
+        {/* ADMIN DETAILS */}
+
+        <div>
+
+          <h3 className="text-lg font-semibold mb-4 text-gray-700">
+            Admin Details
+          </h3>
+
+          <div className="grid md:grid-cols-3 gap-4">
+
+            <Input name="adminFullName" placeholder="Admin Full Name" handleChange={handleChange}/>
+            <Input name="adminEmail" placeholder="Admin Email" handleChange={handleChange}/>
+            <Input name="adminPassword" placeholder="Admin Password" type="password" handleChange={handleChange}/>
+
+            <Input name="adminContactNumber" placeholder="Admin Contact Number" handleChange={handleChange}/>
+
+          </div>
+
+        </div>
+
+
+        {/* SUBSCRIPTION */}
+
+        <div>
+
+          <h3 className="text-lg font-semibold mb-4 text-gray-700">
+            Subscription Details
+          </h3>
+
+          <div className="grid md:grid-cols-3 gap-4">
+
+            <select
+              name="subscriptionPlan"
+              onChange={handleChange}
+              className="input"
+            >
+              <option>BASIC</option>
+              <option>STANDARD</option>
+              <option>PREMIUM</option>
+            </select>
+
+            <Input name="studentCapacity" placeholder="Student Capacity" handleChange={handleChange}/>
+
+          </div>
+
+        </div>
+
+
+        {/* FEATURES */}
+
+        <div className="flex gap-6">
+
+          <label className="flex items-center gap-2 text-gray-700">
+
+            <input
+              type="checkbox"
+              name="enableSms"
+              onChange={handleChange}
+            />
+
+            Enable SMS
+
+          </label>
+
+          <label className="flex items-center gap-2 text-gray-700">
+
+            <input
+              type="checkbox"
+              name="enableMobileAppAccess"
+              defaultChecked
+              onChange={handleChange}
+            />
+
+            Enable Mobile App
+
+          </label>
+
+        </div>
+
+
+        {/* SUBMIT */}
 
         <button
           type="submit"
-          className="col-span-2 bg-blue-600 text-white py-2 rounded-lg"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-[1.02]"
         >
-          Submit
+
+          {loading ? "Creating School..." : "Onboard School"}
+
         </button>
 
       </form>
+
     </div>
+
   );
+
+}
+
+
+/* INPUT COMPONENT */
+
+function Input({ name,placeholder,handleChange,type="text" }) {
+
+  return (
+
+    <input
+      type={type}
+      name={name}
+      placeholder={placeholder}
+      onChange={handleChange}
+      className="border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+    />
+
+  );
+
 }
