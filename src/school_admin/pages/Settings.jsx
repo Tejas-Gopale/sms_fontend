@@ -1,6 +1,6 @@
 import SchoolAdminSidebar from "../components/SchoolAdminSidebar";
 
-export default function FeeManagement() {
+export default function Settings() {
 
   return (
 
@@ -11,13 +11,25 @@ export default function FeeManagement() {
       <div className="flex-1 p-6 bg-gray-100 min-h-screen">
 
         <h1 className="text-3xl font-bold mb-6">
-          Fee Management
+          Settings
         </h1>
 
         <div className="bg-white p-6 rounded-xl shadow">
 
+          <input
+            type="text"
+            placeholder="School Name"
+            className="border p-3 w-full mb-3"
+          />
+
+          <input
+            type="email"
+            placeholder="School Email"
+            className="border p-3 w-full mb-3"
+          />
+
           <button className="bg-blue-500 text-white px-4 py-2 rounded">
-            Create Fee Structure
+            Save Settings
           </button>
 
         </div>
