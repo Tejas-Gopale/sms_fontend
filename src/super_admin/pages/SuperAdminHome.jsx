@@ -12,12 +12,15 @@ import {
   Activity,
   BookOpen,
 } from "lucide-react";
-import Sidebar from "../../common/components/Sidebar";
+import Sidebar from "../components/SuperAdminSidebar";
 
 export default function SuperAdminHome() {
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6">Super Admin Dashboard</h1>
+  <div className="flex">
+    <Sidebar />
+ 
+  <div className="p-6 bg-gray-100 min-h-screen">
+      <h1 className="text-3xl font-bold mb-6">Karyasoft Technology</h1>
       <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-6">
       {/* <Sidebar /> */}
         <DashboardCard
@@ -68,6 +71,7 @@ export default function SuperAdminHome() {
         <ExpiringSchoolsCard />
       </div>
     </div>
+     </div>
   );
 }
 /*

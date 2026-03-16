@@ -1,20 +1,18 @@
 import { Link, useLocation } from "react-router-dom";
-
 import {
   LayoutDashboard,
-  Users,
-  GraduationCap,
-  BookOpen,
-  ClipboardList,
+  ClipboardCheck,
   CalendarDays,
-  IndianRupee,
   FileText,
+  BookOpen,
+  MessageSquare,
+  IndianRupee,
   Bell,
   Settings,
   LogOut
 } from "lucide-react";
 
-export default function SchoolAdminSidebar() {
+export default function TeacherSidebar() {
 
   const location = useLocation();
 
@@ -23,61 +21,55 @@ export default function SchoolAdminSidebar() {
     {
       name: "Dashboard",
       icon: LayoutDashboard,
-      path: "/school-admin/dashboard"
+      path: "/teacher/dashboard"
     },
 
     {
-      name: "Students",
-      icon: Users,
-      path: "/school-admin/students"
+      name: "Take Attendance",
+      icon: ClipboardCheck,
+      path: "/teacher/attendance"
     },
 
     {
-      name: "Teachers",
-      icon: GraduationCap,
-      path: "/school-admin/teachers"
-    },
-
-    {
-      name: "Classes",
-      icon: BookOpen,
-      path: "/school-admin/classes"
-    },
-
-    {
-      name: "Subjects",
-      icon: ClipboardList,
-      path: "/school-admin/subjects"
-    },
-
-    {
-      name: "Timetable",
+      name: "My Attendance",
       icon: CalendarDays,
-      path: "/school-admin/timetable"
+      path: "/teacher/my-attendance"
     },
 
     {
-      name: "Fees Management",
-      icon: IndianRupee,
-      path: "/school-admin/fees"
+      name: "Homework",
+      icon: BookOpen,
+      path: "/teacher/homework"
     },
 
     {
-      name: "Exams & Results",
+      name: "Exams / Tests",
       icon: FileText,
-      path: "/school-admin/exams"
+      path: "/teacher/exams"
+    },
+
+    {
+      name: "Student Remarks",
+      icon: MessageSquare,
+      path: "/teacher/remarks"
+    },
+
+    {
+      name: "Salary",
+      icon: IndianRupee,
+      path: "/teacher/salary"
     },
 
     {
       name: "Notifications",
       icon: Bell,
-      path: "/school-admin/notifications"
+      path: "/teacher/notifications"
     },
 
     {
       name: "Settings",
       icon: Settings,
-      path: "/school-admin/settings"
+      path: "/teacher/settings"
     }
 
   ];
@@ -86,20 +78,17 @@ export default function SchoolAdminSidebar() {
 
     <div className="w-64 bg-white shadow-lg min-h-screen flex flex-col">
 
-      {/* Logo */}
       <div className="p-6 border-b">
         <h1 className="text-2xl font-bold text-blue-600">
-          School Panel
+          Teacher Panel
         </h1>
       </div>
 
-      {/* Menu */}
       <nav className="flex-1 p-4 space-y-2">
 
         {menuItems.map((item, index) => {
 
           const Icon = item.icon;
-
           const active = location.pathname === item.path;
 
           return (
@@ -108,18 +97,15 @@ export default function SchoolAdminSidebar() {
               key={index}
               to={item.path}
               className={`flex items-center gap-3 p-3 rounded-lg transition
-                ${
-                  active
-                    ? "bg-blue-500 text-white"
-                    : "text-gray-700 hover:bg-gray-100"
-                }`}
+              ${
+                active
+                  ? "bg-blue-500 text-white"
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}
             >
 
               <Icon size={20} />
-
-              <span className="font-medium">
-                {item.name}
-              </span>
+              {item.name}
 
             </Link>
 
@@ -129,13 +115,11 @@ export default function SchoolAdminSidebar() {
 
       </nav>
 
-      {/* Logout */}
       <div className="p-4 border-t">
 
-        <button className="flex items-center gap-3 text-red-500 hover:bg-red-50 p-3 w-full rounded-lg">
+        <button className="flex items-center gap-2 text-red-500">
 
           <LogOut size={20} />
-
           Logout
 
         </button>
@@ -143,6 +127,6 @@ export default function SchoolAdminSidebar() {
       </div>
 
     </div>
-  );
 
+  );
 }
