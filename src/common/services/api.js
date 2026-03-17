@@ -19,4 +19,9 @@ API.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+export const getStudents = async (page = 0, size = 10) => {
+  const res = await API.get(`/school-admin/getStudentDetails?page=${page}&size=${size}`);
+  return res.data;
+};
+
 export default API;

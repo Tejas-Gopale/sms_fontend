@@ -173,7 +173,6 @@ export default function Settings() {
 
         </div>
 
-
         {/* Save Button */}
 
         <div className="mt-6">

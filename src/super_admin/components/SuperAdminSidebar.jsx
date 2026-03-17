@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
-
+import { useNavigate } from "react-router-dom";
+import { clearAuthData } from "../../common/utils/tokenStorage"; 
 import {
   LayoutDashboard,
   School,
@@ -12,7 +13,7 @@ import {
 } from "lucide-react";
 
 export default function Sidebar() {
-
+  const navigate = useNavigate();
   const location = useLocation();
 
   const menuItems = [
@@ -24,6 +25,11 @@ export default function Sidebar() {
     { name: "Subscriptions", icon: CreditCard, path: "/super-admin/subscriptions" },
     { name: "Settings", icon: Settings, path: "/super-admin/settings" },
   ];
+
+  const handleLogout = () => {
+  clearAuthData(); // removes accessToken, refreshToken, userData
+  navigate("/");
+};
 
   return (
     <div className="w-64 bg-white shadow-lg min-h-screen flex flex-col">
@@ -60,8 +66,11 @@ export default function Sidebar() {
       </nav>
 
         {/* Logout */}
-      <div className="p-4 border-t">
-        <button className="flex items-center gap-3 text-red-500 hover:bg-red-50 p-3 w-full rounded-lg">
+     <div className="p-4 border-t">
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 text-red-500 hover:bg-red-50 p-3 w-full rounded-lg"
+        >
           <LogOut size={20} />
           Logout
         </button>
