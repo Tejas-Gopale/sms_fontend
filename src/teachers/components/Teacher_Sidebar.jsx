@@ -1,4 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { clearAuthData } from "../../common/utils/tokenStorage"; 
 import {
   LayoutDashboard,
   ClipboardCheck,
@@ -12,18 +14,24 @@ import {
   LogOut
 } from "lucide-react";
 
+//= polutry (20,000) + dalim + drakshay + oranges + school sas (karyasoft) = 
 export default function TeacherSidebar() {
-
+  const navigate = useNavigate();
   const location = useLocation();
+   
+  const handleLogout = () => {
+    clearAuthData(); // removes accessToken, refreshToken, userData
+    navigate("/");
+  };
 
   const menuItems = [
 
     {
       name: "Dashboard",
       icon: LayoutDashboard,
-      path: "/teacher/dashboard"
+      path: "/teachers/dashboard"
     },
-
+    
     {
       name: "Take Attendance",
       icon: ClipboardCheck,
@@ -39,13 +47,13 @@ export default function TeacherSidebar() {
     {
       name: "Homework",
       icon: BookOpen,
-      path: "/teacher/homework"
+      path: "/teacher/assign-homework"
     },
 
     {
       name: "Exams / Tests",
       icon: FileText,
-      path: "/teacher/exams"
+      path: "/teacher/exams_and_tests"
     },
 
     {
@@ -115,15 +123,14 @@ export default function TeacherSidebar() {
 
       </nav>
 
-      <div className="p-4 border-t">
-
-        <button className="flex items-center gap-2 text-red-500">
-
+     <div className="p-4 border-t">
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 text-red-500 hover:bg-red-50 p-3 w-full rounded-lg"
+        >
           <LogOut size={20} />
           Logout
-
         </button>
-
       </div>
 
     </div>

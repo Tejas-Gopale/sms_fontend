@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
-
+import { clearAuthData } from "../../common/utils/tokenStorage"; 
+import { useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -15,6 +16,11 @@ import {
 } from "lucide-react";
 
 export default function SchoolAdminSidebar() {
+const navigate = useNavigate();
+  const handleLogout = () => {
+    clearAuthData(); // removes accessToken, refreshToken, userData
+    navigate("/");
+  };
 
   const location = useLocation();
 
@@ -131,15 +137,13 @@ export default function SchoolAdminSidebar() {
 
       {/* Logout */}
       <div className="p-4 border-t">
-
-        <button className="flex items-center gap-3 text-red-500 hover:bg-red-50 p-3 w-full rounded-lg">
-
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 text-red-500 hover:bg-red-50 p-3 w-full rounded-lg"
+        >
           <LogOut size={20} />
-
           Logout
-
         </button>
-
       </div>
 
     </div>

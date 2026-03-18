@@ -1,21 +1,22 @@
 import { Link, useLocation } from "react-router-dom";
+import { clearAuthData } from "../../common/utils/tokenStorage"; 
+import { useNavigate } from "react-router-dom";
 
 import {
-  LayoutDashboard,
-  ClipboardCheck,
-  BookOpen,
-  FileText,
-  MapPin,
-  IndianRupee,
-  MessageSquare,
-  Bell,
-  Settings,
-  LogOut
+  LayoutDashboard,  ClipboardCheck,  BookOpen,  FileText,  MapPin,
+  IndianRupee,  MessageSquare,   Bell,  Settings,   LogOut
 } from "lucide-react";
 
 export default function ParentSidebar() {
 
   const location = useLocation();
+
+  const navigate = useNavigate();
+  const handleLogout = () => {
+    clearAuthData(); // removes accessToken, refreshToken, userData
+    navigate("/");
+  };
+
 
   const menuItems = [
 
@@ -118,16 +119,15 @@ export default function ParentSidebar() {
 
       </nav>
 
+      {/* Logout */}
       <div className="p-4 border-t">
-
-        <button className="flex items-center gap-2 text-red-500">
-
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 text-red-500 hover:bg-red-50 p-3 w-full rounded-lg"
+        >
           <LogOut size={20} />
-
           Logout
-
         </button>
-
       </div>
 
     </div>

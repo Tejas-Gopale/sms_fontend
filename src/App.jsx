@@ -22,6 +22,13 @@ import Teacher from "./school_admin/pages/AllTeachers";
 
 // Teacher Importing components
 import TeacherDashboard from "./teachers/pages/Teachers_Dashboard";
+import Teacher_Salary from "./teachers/pages/Teacher_Salary";
+import TeacherNotifications from "./teachers/pages/Teacher_Notification";
+import StudentRemarks from "./teachers/pages/StudentRemarks";
+import TeacherExam from "./teachers/pages/ExamAndTes";
+import AssignHomework from "./teachers/pages/AssignHomework";
+import TeacherAttendance from "./teachers/pages/TeacherAttendance";
+import TakeAttendance from "./teachers/pages/TakeAttendance";
 
 // Parent Importing components
 import ParentDashboard from "./parents/pages/Parents_Dashboard";
@@ -37,6 +44,7 @@ import ParentAttendance from "./parents/pages/ParentAttendance";
 // common components
 import ProtectedRoute from "./common/routes/ProtectedRoute";
 import LoginPage from "./common/components/LoginPage";
+
 
 
 function App() {
@@ -72,9 +80,18 @@ function App() {
         <Route path="/school-admin/notifications" element={<Notifications />} />
         <Route path="/school-admin/settings" element={<Settings />} />
       </> 
-      
-    {/* Add more routes for teachers, students, etc. */}
+
+        {/* Teacher Routes */}
+
         <Route path="/teachers/dashboard" element={<TeacherDashboard />}/>
+        <Route path="/teacher/attendance" element={<TakeAttendance />} />
+        <Route path="/teacher/my-attendance" element={<TeacherAttendance />} />
+        <Route path="/teacher/assign-homework" element={<AssignHomework />} />
+        <Route path="/teacher/exams_and_tests" element={<TeacherExam />} />
+        <Route path="/teacher/remarks" element={<StudentRemarks />} />
+        <Route path="/teacher/salary" element={<Teacher_Salary />} />
+        <Route path="/teacher/notifications" element={<TeacherNotifications />} />
+        {/* Add more routes for teachers, students, etc. */}
 
         <Route path="/parents/dashboard" element={<ParentDashboard />} />
 
