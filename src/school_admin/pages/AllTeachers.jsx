@@ -40,7 +40,7 @@ export default function Teachers() {
           size,
           sortBy,
           sortDir,
-          search: debouncedSearch, // 🔥 backend search param
+          search: debouncedSearch,
         },
       });
 
