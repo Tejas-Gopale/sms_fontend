@@ -141,7 +141,6 @@ export default function Teachers() {
                         Subject <ArrowUpDown size={14} />
                       </div>
                     </th>
-
                   </tr>
                 </thead>
 
