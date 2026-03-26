@@ -24,4 +24,15 @@ export const getStudents = async (page = 0, size = 10) => {
   return res.data;
 };
 
+// Get all classrooms
+export const getClassrooms = async () => {
+  const res = await API.get("/school-admin/getClassRoom");
+  return res.data;
+};
+
+// Get students by classroom
+export const getStudentsByClassroom = async (classroomId) => {
+  const res = await API.get(`/classroom/${classroomId}/students`);
+  return res.data;
+};
 export default API;

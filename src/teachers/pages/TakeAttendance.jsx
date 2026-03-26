@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import TeacherSidebar from "../components/Teacher_Sidebar";
+import { getClassrooms, getStudentsByClassroom } from "../../common/services/api"; // ✅ FIXED IMPORT
 
 export default function TakeAttendance() {
 
@@ -9,52 +10,52 @@ export default function TakeAttendance() {
   const [subjects, setSubjects] = useState([]);
   const [students, setStudents] = useState([]);
 
-  const token = localStorage.getItem("token"); // adjust if different
-
   // 🔹 Fetch Classrooms
   useEffect(() => {
-    fetch("http://localhost:8085/api/v1/school-admin/getClassRoom", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then(res => res.json())
-      .then(data => {
-        setClassrooms(data.content || []);
-      })
-      .catch(err => console.error("Error fetching classrooms:", err));
+    const fetchClassrooms = async () => {
+      try {
+        const data = await getClassrooms();
+        setClassrooms(data?.content || []);
+      } catch (err) {
+        console.error("Error fetching classrooms:", err);
+      }
+    };
+
+    fetchClassrooms();
   }, []);
 
   // 🔹 Handle Classroom Change
-  const handleClassroomChange = (e) => {
+  const handleClassroomChange = async (e) => {
     const classroomId = e.target.value;
     setSelectedClassroomId(classroomId);
+
+    // 🔥 Reset states (important)
+    setSelectedSubject("");
+    setStudents([]);
+    setSubjects([]);
 
     const selectedClassroom = classrooms.find(
       (c) => c.id === Number(classroomId)
     );
 
-    // Set subjects dynamically
     if (selectedClassroom) {
       setSubjects(selectedClassroom.subjects || []);
     }
 
-    // 🔥 Fetch Students for selected classroom
-    fetch(`http://localhost:8085/api/classroom/${classroomId}/students`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then(res => res.json())
-      .then(data => {
-        const formattedStudents = data.map((s) => ({
-          id: s.id,
-          name: `${s.firstName} ${s.lastName}`,
-          status: "Present", // default
-        }));
-        setStudents(formattedStudents);
-      })
-      .catch(err => console.error("Error fetching students:", err));
+    // 🔥 Fetch Students
+    try {
+      const data = await getStudentsByClassroom(classroomId);
+
+      const formattedStudents = (data || []).map((s) => ({
+        id: s.id,
+        name: `${s.firstName} ${s.lastName}`,
+        status: "Present",
+      }));
+
+      setStudents(formattedStudents);
+    } catch (err) {
+      console.error("Error fetching students:", err);
+    }
   };
 
   // 🔹 Toggle Attendance
@@ -67,6 +68,11 @@ export default function TakeAttendance() {
 
   // 🔹 Save Attendance
   const handleSave = () => {
+    if (!selectedClassroomId || !selectedSubject) {
+      alert("Please select classroom and subject ⚠️");
+      return;
+    }
+
     console.log("Attendance Saved:", {
       classroomId: selectedClassroomId,
       subject: selectedSubject,
@@ -100,7 +106,7 @@ export default function TakeAttendance() {
         {/* DROPDOWNS */}
         <div className="flex gap-4 mb-6">
 
-          {/* CLASSROOM DROPDOWN */}
+          {/* CLASSROOM */}
           <select
             value={selectedClassroomId}
             onChange={handleClassroomChange}
@@ -114,7 +120,7 @@ export default function TakeAttendance() {
             ))}
           </select>
 
-          {/* SUBJECT DROPDOWN */}
+          {/* SUBJECT */}
           <select
             value={selectedSubject}
             onChange={(e) => setSelectedSubject(e.target.value)}
@@ -143,35 +149,43 @@ export default function TakeAttendance() {
               </thead>
 
               <tbody>
-                {students.map((student) => (
-                  <tr key={student.id} className="border-t hover:bg-gray-50">
-                    <td className="p-3 font-medium">
-                      {student.name}
-                    </td>
+                {students.length > 0 ? (
+                  students.map((student) => (
+                    <tr key={student.id} className="border-t hover:bg-gray-50">
+                      <td className="p-3 font-medium">
+                        {student.name}
+                      </td>
 
-                    <td className="p-3 text-center">
-                      <input
-                        type="radio"
-                        name={`status-${student.id}`}
-                        checked={student.status === "Present"}
-                        onChange={() =>
-                          toggleStatus(student.id, "Present")
-                        }
-                      />
-                    </td>
+                      <td className="p-3 text-center">
+                        <input
+                          type="radio"
+                          name={`status-${student.id}`}
+                          checked={student.status === "Present"}
+                          onChange={() =>
+                            toggleStatus(student.id, "Present")
+                          }
+                        />
+                      </td>
 
-                    <td className="p-3 text-center">
-                      <input
-                        type="radio"
-                        name={`status-${student.id}`}
-                        checked={student.status === "Absent"}
-                        onChange={() =>
-                          toggleStatus(student.id, "Absent")
-                        }
-                      />
+                      <td className="p-3 text-center">
+                        <input
+                          type="radio"
+                          name={`status-${student.id}`}
+                          checked={student.status === "Absent"}
+                          onChange={() =>
+                            toggleStatus(student.id, "Absent")
+                          }
+                        />
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="3" className="text-center p-4 text-gray-500">
+                      No students found
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
 
             </table>

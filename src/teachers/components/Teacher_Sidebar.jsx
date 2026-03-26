@@ -13,6 +13,7 @@ import {
   Settings,
   LogOut
 } from "lucide-react";
+import { path } from "framer-motion/client";
 
 //= polutry (20,000) + dalim + drakshay + oranges + school sas (karyasoft) = 
 export default function TeacherSidebar() {
@@ -73,7 +74,11 @@ export default function TeacherSidebar() {
       icon: Bell,
       path: "/teacher/notifications"
     },
-
+    {
+      name: "TimeTable",
+      icon:   CalendarDays,
+      path: "/teacher/timetable"
+    },
     {
       name: "Settings",
       icon: Settings,

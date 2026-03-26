@@ -4,8 +4,10 @@ import { useNavigate } from "react-router-dom";
 
 import {
   LayoutDashboard,  ClipboardCheck,  BookOpen,  FileText,  MapPin,
-  IndianRupee,  MessageSquare,   Bell,  Settings,   LogOut
+  IndianRupee,  MessageSquare,   Bell,  Settings,   LogOut,
+  CalendarDaysIcon
 } from "lucide-react";
+import { path } from "framer-motion/client";
 
 export default function ParentSidebar() {
 
@@ -67,7 +69,12 @@ export default function ParentSidebar() {
       icon: Bell,
       path: "/parent/notifications"
     },
-
+    
+    {
+      name: "TimeTable",
+      icon:   CalendarDaysIcon  ,
+      path : "/parent/timetable"
+    },
     {
       name: "Settings",
       icon: Settings,

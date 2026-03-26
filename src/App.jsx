@@ -40,10 +40,12 @@ import ParentBusTracking from "./parents/pages/ParentBusTracking";
 import ParentResults from "./parents/pages/ParentResults";
 import ParentHomework from "./parents/pages/ParentHomework";
 import ParentAttendance from "./parents/pages/ParentAttendance";
+import ParentTimeTable from "./parents/pages/Timetable";
 
 // common components
 import ProtectedRoute from "./common/routes/ProtectedRoute";
 import LoginPage from "./common/components/LoginPage";
+
 
 
 
@@ -104,7 +106,7 @@ function App() {
         <Route path="/parent/remarks" element={<ParentRemarks />} />
         <Route path="/parent/notifications" element={<ParentNotifications />} />
         <Route path="/parent/settings" element={<ParentSettings />} />
-
+        <Route path="/parent/timetable" element={<ParentTimeTable />} />
         
       </Routes>
     </BrowserRouter>
