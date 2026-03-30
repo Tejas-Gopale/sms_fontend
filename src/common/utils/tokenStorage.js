@@ -6,6 +6,8 @@ export const storeAuthData = (data) => {
   
   localStorage.setItem(ACCESS_TOKEN, data.accessToken);
   localStorage.setItem(REFRESH_TOKEN, data.refreshToken);
+  localStorage.setItem("schoolId", data.schoolId); 
+  localStorage.setItem("userId", data.userId);
   console.log("Storing Auth Data:", {
     accessToken: data.accessToken,
     refreshToken: data.refreshToken,

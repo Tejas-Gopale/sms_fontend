@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import SchoolAdminSidebar from "../components/SchoolAdminSidebar";
 import StudentTable from "../components/studentTable";
-import { getStudents } from "../../common/services/api";
+import API, { getStudents } from "../../common/services/api";
 import { X, Upload } from "lucide-react";
 
 export default function Students() {
@@ -10,11 +10,16 @@ export default function Students() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // ✅ SERVER PAGINATION
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const itemsPerPage = 10;
+
   // MODALS
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
 
-  // FORM STATE
+  // FORM
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -29,10 +34,16 @@ export default function Students() {
 
   const [file, setFile] = useState(null);
 
-  const fetchStudents = async () => {
+  // ✅ FETCH STUDENTS WITH PAGE
+  const fetchStudents = async (currentPage = 0) => {
+    setLoading(true);
     try {
-      const data = await getStudents();
-      setStudents(data.content);
+      const data = await getStudents(currentPage, itemsPerPage);
+
+      setStudents(data.content || []);
+      setTotalPages(data.totalPages || 1);
+      setPage(data.number || 0);
+
     } catch (err) {
       console.error("Error fetching students", err);
     } finally {
@@ -41,22 +52,20 @@ export default function Students() {
   };
 
   useEffect(() => {
-    fetchStudents();
+    fetchStudents(0);
   }, []);
 
-  // INPUT HANDLER
+  // INPUT
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // ✅ CREATE STUDENT
+  // CREATE
   const handleCreateStudent = async () => {
     try {
       const res = await fetch("http://localhost:8085/api/v1/school-admin/create-student", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
@@ -64,7 +73,7 @@ export default function Students() {
 
       alert("Student Created ✅");
       setShowAddStudent(false);
-      fetchStudents(); // 🔥 refresh list
+      fetchStudents(page);
 
     } catch (err) {
       console.error(err);
@@ -72,7 +81,7 @@ export default function Students() {
     }
   };
 
-  // ✅ BULK UPLOAD
+  // BULK UPLOAD
   const handleBulkUpload = async () => {
     if (!file) return alert("Select file first");
 
@@ -80,19 +89,17 @@ export default function Students() {
     formDataUpload.append("file", file);
 
     try {
-      const res = await fetch(
-        "http://localhost:8085/api/super-admin/school-onbarding/upload-classromm-students",
-        {
-          method: "POST",
-          body: formDataUpload,
-        }
+      const res = await API.post(
+        "/super-admin/school-onbarding/upload-classromm-students",
+        formDataUpload,
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      if (!res.ok) throw new Error("Upload failed");
+      if (res.status !== 200) throw new Error("Upload failed");
 
       alert("Bulk Upload Success ✅");
       setShowBulkUpload(false);
-      fetchStudents(); // 🔥 refresh
+      fetchStudents(page);
 
     } catch (err) {
       console.error(err);
@@ -107,7 +114,6 @@ export default function Students() {
 
       <div className="flex-1 p-6 bg-gray-100 min-h-screen">
 
-        {/* HEADER */}
         <motion.h1
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -119,17 +125,13 @@ export default function Students() {
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
           className="bg-white p-6 rounded-2xl shadow"
         >
 
           <div className="flex justify-between items-center mb-4">
-
             <h2 className="text-lg font-semibold">Student List</h2>
 
             <div className="flex gap-2">
-
-              {/* ADD STUDENT */}
               <button
                 onClick={() => setShowAddStudent(true)}
                 className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg"
@@ -137,7 +139,6 @@ export default function Students() {
                 + Add Student
               </button>
 
-              {/* BULK UPLOAD */}
               <button
                 onClick={() => setShowBulkUpload(true)}
                 className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
@@ -145,30 +146,82 @@ export default function Students() {
                 <Upload size={16} />
                 Bulk Upload
               </button>
-
             </div>
-
           </div>
 
-          <StudentTable students={students} loading={loading} />
+          {/* TABLE */}
+          {loading ? (
+            <p className="text-center py-6">Loading students...</p>
+          ) : (
+            <StudentTable students={students} />
+          )}
+
+          {/* ✅ PAGINATION */}
+          <div className="flex justify-between items-center mt-6">
+
+            <span className="text-sm text-gray-500">
+              Page {page + 1} of {totalPages}
+            </span>
+
+            <div className="flex gap-2">
+
+              {/* PREV */}
+              <button
+                onClick={() => fetchStudents(page - 1)}
+                disabled={page === 0}
+                className={`px-3 py-1 rounded-lg border ${
+                  page === 0
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    : "bg-white hover:bg-gray-100"
+                }`}
+              >
+                Prev
+              </button>
+
+              {/* PAGE NUMBERS */}
+              {[...Array(totalPages).keys()].map((p) => (
+                <button
+                  key={p}
+                  onClick={() => fetchStudents(p)}
+                  className={`px-3 py-1 rounded-lg ${
+                    page === p
+                      ? "bg-blue-600 text-white"
+                      : "bg-white border hover:bg-gray-100"
+                  }`}
+                >
+                  {p + 1}
+                </button>
+              ))}
+
+              {/* NEXT */}
+              <button
+                onClick={() => fetchStudents(page + 1)}
+                disabled={page >= totalPages - 1}
+                className={`px-3 py-1 rounded-lg border ${
+                  page >= totalPages - 1
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    : "bg-white hover:bg-gray-100"
+                }`}
+              >
+                Next
+              </button>
+
+            </div>
+          </div>
 
         </motion.div>
-
       </div>
 
-      {/* ================= ADD STUDENT MODAL ================= */}
+      {/* ADD STUDENT MODAL */}
       {showAddStudent && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center">
-
           <div className="bg-white rounded-xl p-6 w-[500px] shadow-lg">
-
             <div className="flex justify-between mb-4">
               <h2 className="text-xl font-semibold">Add Student</h2>
               <X onClick={() => setShowAddStudent(false)} className="cursor-pointer" />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-
               <input name="firstName" placeholder="First Name" onChange={handleChange} className="border p-2 rounded" />
               <input name="lastName" placeholder="Last Name" onChange={handleChange} className="border p-2 rounded" />
               <input name="email" placeholder="Email" onChange={handleChange} className="border p-2 rounded col-span-2" />
@@ -183,7 +236,6 @@ export default function Students() {
 
               <input name="classRoomId" placeholder="ClassRoom ID" onChange={handleChange} className="border p-2 rounded" />
               <input name="section" placeholder="Section" onChange={handleChange} className="border p-2 rounded" />
-
             </div>
 
             <button
@@ -192,17 +244,14 @@ export default function Students() {
             >
               Create Student
             </button>
-
           </div>
         </div>
       )}
 
-      {/* ================= BULK UPLOAD MODAL ================= */}
+      {/* BULK UPLOAD MODAL */}
       {showBulkUpload && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center">
-
           <div className="bg-white rounded-xl p-6 w-[400px] shadow-lg">
-
             <div className="flex justify-between mb-4">
               <h2 className="text-xl font-semibold">Bulk Upload</h2>
               <X onClick={() => setShowBulkUpload(false)} className="cursor-pointer" />
@@ -221,7 +270,6 @@ export default function Students() {
             >
               Upload File
             </button>
-
           </div>
         </div>
       )}

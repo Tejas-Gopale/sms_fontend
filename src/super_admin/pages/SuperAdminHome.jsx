@@ -39,7 +39,7 @@ export default function SuperAdminHome() {
   const fetchDashboard = async () => {
     try {
       const response = await API.get("/super-admin/getDashboard-data");
-setDashboardData(response.data);
+      setDashboardData(response.data);
     } catch (error) {
       console.error("Error fetching dashboard:", error);
     } finally {

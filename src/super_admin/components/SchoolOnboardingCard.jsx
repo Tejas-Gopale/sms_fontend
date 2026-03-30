@@ -1,6 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
-
+import ApiService from "../../common/services/api";
 export default function SchoolOnboardingCard() {
 
   const [loading,setLoading] = useState(false);
@@ -48,15 +48,14 @@ export default function SchoolOnboardingCard() {
 
     try {
 
-      await axios.post(
-        "http://localhost:8080/api/superadmin/onboard-school",
+      await ApiService.post(
+        "/super-admin/create-school",
         formData
       );
 
       alert("School Onboarded Successfully");
 
     } catch (err) {
-
       console.error(err);
       alert("Error onboarding school");
 
