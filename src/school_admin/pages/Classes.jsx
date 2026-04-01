@@ -33,6 +33,7 @@ export default function Classes() {
       const res = await API.get(`school-admin/getClassRoom`, {
         params: { page, size: 10 }
       });
+      console.log("Classes API response:", res.data); // DEBUG LOG
       setClasses(res.data.content || []);
       setTotalPages(res.data.totalPages || 0);
     } catch (err) {
@@ -42,11 +43,13 @@ export default function Classes() {
 
   const loadTeachers = async () => {
     const res = await API.get("/school-admin/getTeacherDetails");
+    console.log("Teachers API response:", res.data); // DEBUG LOG
     setTeachers(res.data.content || []);
   };
 
   const loadStudents = async () => {
     const res = await API.get("/school-admin/getStudentDetails");
+    console.log("Students API response:", res.data); // DEBUG LOG
     setStudents(res.data.content || []);
   };
 
@@ -57,6 +60,7 @@ export default function Classes() {
   // ================= ACTIONS =================
   const createClass = async () => {
     await API.post("/school-admin/createClassRoom", { grade, section });
+    console.log("Class created with grade:", grade, "and section:", section); // DEBUG LOG
     setShowClassModal(false);
     setGrade("");
     setSection("");
@@ -64,19 +68,24 @@ export default function Classes() {
   };
 
   const assignTeacher = async () => {
-    await API.patch("/school-admin/assignTeacher", {
-      classId: selectedClassId,
-      teacherId: selectedTeacher
+    await API.patch("/school-admin/Adding-classTeacher", {
+      classRomeId: selectedClassId,
+      userId: selectedTeacher
     });
+    console.log("Assigned teacher ID:", selectedTeacher, "to class ID:", selectedClassId); // DEBUG LOG
+
     setShowTeacherModal(false);
     loadClasses();
   };
 
   const addStudents = async () => {
     await API.post("/school-admin/addStudentsToClass", {
+    
+    
       classId: selectedClassId,
       studentIds: selectedStudents
     });
+    console.log("Students added to class ID:", selectedClassId); // DEBUG LOG
     setShowStudentModal(false);
   };
 
@@ -95,6 +104,7 @@ export default function Classes() {
         headers: { "Content-Type": "multipart/form-data" }
       });
 
+      console.log("Excel file uploaded successfully"); // DEBUG LOG
       alert("Excel uploaded successfully 🚀");
       setShowBulkModal(false);
       setExcelFile(null);
@@ -246,7 +256,10 @@ export default function Classes() {
         {showTeacherModal && (
           <Modal onClose={() => setShowTeacherModal(false)} title="Assign Teacher">
             <select
-              onChange={(e) => setSelectedTeacher(e.target.value)}
+              onChange={(e) => {
+                setSelectedTeacher(e.target.value);
+                console.log("Selected teacher ID:", e.target.value);
+              }}
               className="input"
             >
               <option>Select Teacher</option>

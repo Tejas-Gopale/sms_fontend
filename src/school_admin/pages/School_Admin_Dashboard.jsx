@@ -1,45 +1,68 @@
+import { useEffect, useState } from "react";
 import {
   Users,
   GraduationCap,
   BookOpen,
-  IndianRupee,
-  CalendarDays,
-  ClipboardList
+  IndianRupee
 } from "lucide-react";
 
 import SchoolAdminSidebar from "../components/SchoolAdminSidebar";
+import API from "../../common/services/api";
 
 export default function SchoolAdminDashboard() {
 
+  // ✅ State to store API data
+  const [dashboardData, setDashboardData] = useState({
+    total_Students: 0,
+    total_Teachers: 0,
+    totalClasses: 0,
+    fees_Colleced: 0
+  });
+
+  // ✅ API Call
+  const getSchoolDashboardData = async () => {
+    try {
+      const res = await API.get("/school-admin/getSchoolDashboardData");
+      setDashboardData(res.data);
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+    }
+  };
+
+  // ✅ Call API on page load
+  useEffect(() => {
+    getSchoolDashboardData();
+  }, []);
+
+  // ✅ Dynamic Stats
   const stats = [
     {
       title: "Total Students",
-      value: 1240,
+      value: dashboardData.total_Students,
       icon: Users,
       color: "border-blue-500"
     },
     {
       title: "Total Teachers",
-      value: 85,
+      value: dashboardData.total_Teachers,
       icon: GraduationCap,
       color: "border-green-500"
     },
     {
       title: "Total Classes",
-      value: 32,
+      value: dashboardData.totalClasses,
       icon: BookOpen,
       color: "border-purple-500"
     },
     {
       title: "Fees Collected",
-      value: "₹12,50,000",
+      value: `₹${dashboardData.fees_Colleced?.toLocaleString()}`,
       icon: IndianRupee,
       color: "border-yellow-500"
     }
   ];
 
   return (
-
     <div className="flex">
 
       <SchoolAdminSidebar />
@@ -51,7 +74,6 @@ export default function SchoolAdminDashboard() {
         </h1>
 
         {/* Dashboard Cards */}
-
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
 
           {stats.map((stat, index) => {
@@ -59,7 +81,6 @@ export default function SchoolAdminDashboard() {
             const Icon = stat.icon;
 
             return (
-
               <div
                 key={index}
                 className={`bg-white p-6 rounded-xl shadow border-l-4 ${stat.color}`}
@@ -68,7 +89,6 @@ export default function SchoolAdminDashboard() {
                 <div className="flex items-center justify-between">
 
                   <div>
-
                     <p className="text-gray-500 text-sm">
                       {stat.title}
                     </p>
@@ -76,7 +96,6 @@ export default function SchoolAdminDashboard() {
                     <h2 className="text-2xl font-bold">
                       {stat.value}
                     </h2>
-
                   </div>
 
                   <Icon size={28} className="text-gray-600" />
@@ -84,7 +103,6 @@ export default function SchoolAdminDashboard() {
                 </div>
 
               </div>
-
             );
 
           })}
@@ -92,11 +110,9 @@ export default function SchoolAdminDashboard() {
         </div>
 
         {/* Dashboard Sections */}
-
         <div className="grid lg:grid-cols-2 gap-6 mt-8">
 
           {/* Upcoming Exams */}
-
           <div className="bg-white p-6 rounded-xl shadow">
 
             <h2 className="text-xl font-bold mb-4">
@@ -125,7 +141,6 @@ export default function SchoolAdminDashboard() {
           </div>
 
           {/* Recent Activity */}
-
           <div className="bg-white p-6 rounded-xl shadow">
 
             <h2 className="text-xl font-bold mb-4">
@@ -157,7 +172,6 @@ export default function SchoolAdminDashboard() {
         </div>
 
         {/* Quick Actions */}
-
         <div className="mt-8 bg-white p-6 rounded-xl shadow">
 
           <h2 className="text-xl font-bold mb-4">
@@ -189,7 +203,5 @@ export default function SchoolAdminDashboard() {
       </div>
 
     </div>
-
   );
-
 }

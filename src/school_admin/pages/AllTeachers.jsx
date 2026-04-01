@@ -1,26 +1,33 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import SchoolAdminSidebar from "../components/SchoolAdminSidebar";
 import API from "../../common/services/api";
 import { Search, Plus, ArrowUpDown, Upload, X } from "lucide-react";
 
 export default function Teachers() {
+
   const [teachers, setTeachers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // PAGINATION
   const [page, setPage] = useState(0);
-  const [size, setSize] = useState(10);
-  const [totalPages, setTotalPages] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const itemsPerPage = 10;
+
+  // SORTING
   const [sortBy, setSortBy] = useState("id");
   const [sortDir, setSortDir] = useState("asc");
-  const [loading, setLoading] = useState(false);
 
+  // SEARCH
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  // 🔥 Modal State
+  // MODAL
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
 
-  // 🔥 Debounce Search
+  // 🔥 Debounce
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
@@ -30,34 +37,38 @@ export default function Teachers() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // 🔥 Fetch API
+  // FETCH
   useEffect(() => {
     fetchTeachers();
-  }, [page, size, sortBy, sortDir, debouncedSearch]);
+  }, [page, sortBy, sortDir, debouncedSearch]);
 
   const fetchTeachers = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
 
-      const response = await API.get(`/school-admin/getTeacherDetails`, {
+      const res = await API.get("/school-admin/getTeacherDetails", {
         params: {
           page,
-          size,
+          size: itemsPerPage,
           sortBy,
           sortDir,
           search: debouncedSearch,
         },
       });
 
-      setTeachers(response.data.content || []);
-      setTotalPages(response.data.totalPages || 0);
-    } catch (error) {
-      console.error("Error fetching teachers:", error);
+      const data = res.data;
+      console.log("Fetched teachers:", data); // DEBUG LOG
+      setTeachers(data.content || []);
+      setTotalPages(data.totalPages || 1);
+
+    } catch (err) {
+      console.error("Error fetching teachers:", err);
     } finally {
       setLoading(false);
     }
   };
 
+  // SORT
   const handleSort = (field) => {
     if (sortBy === field) {
       setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -67,12 +78,9 @@ export default function Teachers() {
     }
   };
 
-  // 🔥 Upload API Call
+  // UPLOAD
   const handleUpload = async () => {
-    if (!selectedFile) {
-      alert("Please select a file first");
-      return;
-    }
+    if (!selectedFile) return alert("Select file first");
 
     try {
       setUploading(true);
@@ -80,23 +88,21 @@ export default function Teachers() {
       const formData = new FormData();
       formData.append("file", selectedFile);
 
-      await API.post(
+      const res = await API.post(
         "/super-admin/school-onbarding/upload-teacher-excel",
         formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      alert("Teachers uploaded successfully 🚀");
+      if (res.status !== 200) throw new Error();
+
+      alert("Teachers uploaded ✅");
       setShowUploadModal(false);
       setSelectedFile(null);
       fetchTeachers();
 
-    } catch (error) {
-      console.error("Upload failed:", error);
+    } catch (err) {
+      console.error(err);
       alert("Upload failed ❌");
     } finally {
       setUploading(false);
@@ -105,186 +111,201 @@ export default function Teachers() {
 
   return (
     <div className="flex">
+
       <SchoolAdminSidebar />
 
       <div className="flex-1 p-6 bg-gray-100 min-h-screen">
 
-        {/* HEADER */}
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        {/* TITLE */}
+        <motion.h1
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-3xl font-bold mb-6"
+        >
+          Teachers
+        </motion.h1>
 
-          <h1 className="text-3xl font-bold text-gray-800">
-            Teachers Management
-          </h1>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white p-6 rounded-2xl shadow"
+        >
 
-          <div className="flex gap-3 w-full md:w-auto">
+          {/* HEADER */}
+          <div className="flex justify-between items-center mb-4 flex-wrap gap-3">
 
-            {/* SEARCH */}
-            <div className="relative w-full md:w-72">
-              <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
-              <input
-                type="text"
-                placeholder="Search by Employee ID..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-            </div>
+            <h2 className="text-lg font-semibold">Teacher List</h2>
 
-            {/* ADD SINGLE */}
-            <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow">
-              <Plus size={18} /> Add Teacher
-            </button>
+            <div className="flex gap-2">
 
-            {/* BULK UPLOAD */}
-            <button
-              onClick={() => setShowUploadModal(true)}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow"
-            >
-              <Upload size={18} /> Upload Excel
-            </button>
-
-          </div>
-        </div>
-
-        {/* TABLE */}
-        <div className="bg-white rounded-2xl shadow p-5">
-
-          {loading ? (
-            <div className="text-center py-10 text-gray-500 animate-pulse">
-              Fetching teachers...
-            </div>
-          ) : teachers.length === 0 ? (
-            <div className="text-center py-10 text-gray-400">
-              No teachers found
-            </div>
-          ) : (
-            <>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-gray-500 border-b">
-
-                    <th
-                      className="p-3 cursor-pointer"
-                      onClick={() => handleSort("employeeId")}
-                    >
-                      <div className="flex items-center gap-1">
-                        Employee ID <ArrowUpDown size={14} />
-                      </div>
-                    </th>
-
-                    <th
-                      className="p-3 cursor-pointer"
-                      onClick={() => handleSort("qualification")}
-                    >
-                      <div className="flex items-center gap-1">
-                        Qualification <ArrowUpDown size={14} />
-                      </div>
-                    </th>
-
-                    <th
-                      className="p-3 cursor-pointer"
-                      onClick={() => handleSort("subjectSpecialization")}
-                    >
-                      <div className="flex items-center gap-1">
-                        Subject <ArrowUpDown size={14} />
-                      </div>
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {teachers.map((t) => (
-                    <tr key={t.id} className="border-b hover:bg-gray-50 transition">
-                      <td className="p-3 font-medium text-gray-800">
-                        {t.employeeId || "-"}
-                      </td>
-
-                      <td className="p-3">{t.qualification || "-"}</td>
-
-                      <td className="p-3">
-                        <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded text-xs">
-                          {t.subjectSpecialization || "-"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {/* PAGINATION */}
-              <div className="flex justify-between items-center mt-6">
-
-                <span className="text-gray-600 text-sm">
-                  Page {page + 1} of {totalPages}
-                </span>
-
-                <div className="flex gap-2">
-                  <button
-                    disabled={page === 0}
-                    onClick={() => setPage((prev) => prev - 1)}
-                    className="px-4 py-2 bg-gray-200 rounded-lg disabled:opacity-50"
-                  >
-                    Prev
-                  </button>
-
-                  <button
-                    disabled={page === totalPages - 1}
-                    onClick={() => setPage((prev) => prev + 1)}
-                    className="px-4 py-2 bg-gray-200 rounded-lg disabled:opacity-50"
-                  >
-                    Next
-                  </button>
-                </div>
+              {/* SEARCH */}
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9 pr-3 py-2 border rounded-lg"
+                />
               </div>
-            </>
-          )}
-        </div>
 
-        {/* 🔥 UPLOAD MODAL */}
-        {showUploadModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-
-            <div className="bg-white rounded-xl p-6 w-[400px] relative">
-
-              {/* CLOSE */}
-              <button
-                onClick={() => setShowUploadModal(false)}
-                className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
-              >
-                <X size={20} />
+              {/* ADD */}
+              <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                <Plus size={16} /> Add
               </button>
 
-              <h2 className="text-xl font-semibold mb-4">
-                Upload Teachers Excel
-              </h2>
-
-              {/* FILE INPUT */}
-              <input
-                type="file"
-                accept=".xlsx, .xls"
-                onChange={(e) => setSelectedFile(e.target.files[0])}
-                className="w-full mb-4"
-              />
-
-              {selectedFile && (
-                <p className="text-sm text-gray-600 mb-3">
-                  Selected: {selectedFile.name}
-                </p>
-              )}
-
-              {/* ACTION BUTTON */}
+              {/* UPLOAD */}
               <button
-                onClick={handleUpload}
-                disabled={uploading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg"
+                onClick={() => setShowUploadModal(true)}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
               >
-                {uploading ? "Uploading..." : "Upload"}
+                <Upload size={16} /> Bulk Upload
               </button>
 
             </div>
           </div>
-        )}
+
+          {/* TABLE */}
+          {loading ? (
+            <p className="text-center py-6">Loading teachers...</p>
+          ) : teachers.length === 0 ? (
+            <p className="text-center py-6 text-gray-400">No teachers found</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-gray-500">
+
+                  <th onClick={() => handleSort("email")} className="p-3 cursor-pointer">
+                    <div className="flex items-center gap-1">
+                      Email <ArrowUpDown size={14} />
+                    </div>
+                  </th>
+
+                  <th onClick={() => handleSort("userName")} className="p-3 cursor-pointer">
+                    <div className="flex items-center gap-1">
+                      Names <ArrowUpDown size={14} />
+                    </div>
+                  </th>
+
+                  <th onClick={() => handleSort("qualification")} className="p-3 cursor-pointer">
+                    <div className="flex items-center gap-1">
+                      Qualification <ArrowUpDown size={14} />
+                    </div>
+                  </th>
+
+                  <th onClick={() => handleSort("subjectSpecialization")} className="p-3 cursor-pointer">
+                    <div className="flex items-center gap-1">
+                      Subject <ArrowUpDown size={14} />
+                    </div>
+                  </th>
+
+                </tr>
+              </thead>
+
+              <tbody>
+                {teachers.map((t) => (
+                  <tr key={t.id} className="border-b hover:bg-gray-50">
+
+                    <td className="p-3 font-medium">
+                      {t.email || "-"}
+                    </td>
+                   
+                      <td className="p-3 font-medium">
+                        {t.userName || "-"}
+                      </td>
+
+                    <td className="p-3">
+                      {t.qualification || "-"}
+                    </td>
+
+                    <td className="p-3">
+                      <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded text-xs">
+                        {t.subjectSpecialization || "-"}
+                      </span>
+                    </td>
+
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {/* PAGINATION */}
+          <div className="flex justify-between items-center mt-6">
+
+            <span className="text-sm text-gray-500">
+              Page {page + 1} of {totalPages}
+            </span>
+
+            <div className="flex gap-2">
+
+              <button
+                onClick={() => setPage((prev) => prev - 1)}
+                disabled={page === 0}
+                className="px-3 py-1 rounded-lg border"
+              >
+                Prev
+              </button>
+
+              {[...Array(totalPages).keys()].map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className={`px-3 py-1 rounded-lg ${
+                    page === p
+                      ? "bg-blue-600 text-white"
+                      : "bg-white border"
+                  }`}
+                >
+                  {p + 1}
+                </button>
+              ))}
+
+              <button
+                onClick={() => setPage((prev) => prev + 1)}
+                disabled={page >= totalPages - 1}
+                className="px-3 py-1 rounded-lg border"
+              >
+                Next
+              </button>
+
+            </div>
+          </div>
+
+        </motion.div>
       </div>
+
+      {/* UPLOAD MODAL */}
+      {showUploadModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center">
+
+          <div className="bg-white rounded-xl p-6 w-[400px] shadow-lg">
+
+            <div className="flex justify-between mb-4">
+              <h2 className="text-xl font-semibold">Bulk Upload</h2>
+              <X onClick={() => setShowUploadModal(false)} className="cursor-pointer" />
+            </div>
+
+            <input
+              type="file"
+              accept=".xlsx"
+              onChange={(e) => setSelectedFile(e.target.files[0])}
+              className="mb-4"
+            />
+
+            <button
+              onClick={handleUpload}
+              disabled={uploading}
+              className="w-full bg-blue-600 text-white py-2 rounded"
+            >
+              {uploading ? "Uploading..." : "Upload File"}
+            </button>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
