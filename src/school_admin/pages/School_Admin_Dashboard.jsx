@@ -22,6 +22,7 @@ export default function SchoolAdminDashboard() {
   // ✅ API Call
   const getSchoolDashboardData = async () => {
     try {
+      console.log("Fetching dashboard data..." + new Date().toISOString());
       const res = await API.get("/school-admin/getSchoolDashboardData");
       setDashboardData(res.data);
     } catch (error) {

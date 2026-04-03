@@ -39,14 +39,17 @@ export default function Subjects() {
   const fetchSubjects = async () => {
     setLoading(true);
     try {
-      const res = await API.get("/school-admin/getSubjects", {
-        params: {
-          classroomId:
-            selectedClassroom === "ALL" ? null : selectedClassroom,
-        },
-      });
-
-      setSubjects(res.data || []);
+      console.log("Fetching subjects for classroom:", selectedClassroom);
+      const res = await API.get("/classroom/getSubjectByClassRoomId", {
+      params: {
+        classroomId: selectedClassroom === "ALL" ? null : selectedClassroom,
+        page: 0,
+        size: 10,
+        sortBy: "id",
+        sortDir: "asc",
+      },
+    });
+      setSubjects(res.data.content || []);
     } catch (err) {
       console.error("Error fetching subjects", err);
     } finally {
@@ -60,20 +63,25 @@ export default function Subjects() {
 
     const formData = new FormData();
     formData.append("file", file);
-
+      // classroomId = selectedClassroom === "ALL" ? null : selectedClassroom;
+     
+    
     try {
-      await API.post("/subjects/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
+      await API.post("/super-admin/school-onbarding/upload-subjects", formData,{params: {
+        classRoomId: selectedClassroom === "ALL" ? null : selectedClassroom,
+      },
+        headers : { "Content-Type": "multipart/form-data" }
+    }); 
+      
+      console.log("Upload successful");
       alert("Upload Success");
       setShowUpload(false);
       setFile(null);
 
       fetchSubjects(); // refresh data
     } catch (err) {
-      console.error(err);
-      alert("Upload Failed");
+      console.error("File cant be uploaded: " + err.message || "Upload failed", err);
+      alert("Upload Failed" + (err.message ? ": " + err.message : ""));
     }
   };
 

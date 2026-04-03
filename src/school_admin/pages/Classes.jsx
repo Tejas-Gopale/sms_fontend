@@ -265,7 +265,7 @@ export default function Classes() {
               <option>Select Teacher</option>
               {teachers.map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.employeeId} - {t.subjectSpecialization}
+                  {t.userName} - {t.subjectSpecialization}
                 </option>
               ))}
             </select>

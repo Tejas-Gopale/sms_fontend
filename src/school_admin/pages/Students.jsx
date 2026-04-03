@@ -92,6 +92,7 @@ export default function Students() {
   // CREATE STUDENT
   const handleCreateStudent = async () => {
     try {
+      console.log("Creating student with data:", { ...formData, classRoomId: selectedClassroom });  
       const res = await API.post("/school-admin/create-student", {
         body: JSON.stringify({
           ...formData,
@@ -100,7 +101,6 @@ export default function Students() {
       });
       console.log("Create student response:", res);
       if (!res.ok) throw new Error("Failed");
-
       alert("Student Created ✅");
       setShowAddStudent(false);
       fetchStudents(page, selectedClassroom);
