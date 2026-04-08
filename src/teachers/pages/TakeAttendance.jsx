@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import TeacherSidebar from "../components/Teacher_Sidebar";
-import { getClassrooms, getStudentsByClassroom } from "../../common/services/api"; // ✅ FIXED IMPORT
+import API, {
+  getClassrooms,
+  getStudentsByClassroom,
+} from "../../common/services/api";
 
 export default function TakeAttendance() {
 
@@ -9,6 +12,7 @@ export default function TakeAttendance() {
   const [selectedSubject, setSelectedSubject] = useState("");
   const [subjects, setSubjects] = useState([]);
   const [students, setStudents] = useState([]);
+  const [saving, setSaving] = useState(false);
 
   // 🔹 Fetch Classrooms
   useEffect(() => {
@@ -29,7 +33,7 @@ export default function TakeAttendance() {
     const classroomId = e.target.value;
     setSelectedClassroomId(classroomId);
 
-    // 🔥 Reset states (important)
+    // reset
     setSelectedSubject("");
     setStudents([]);
     setSubjects([]);
@@ -42,7 +46,7 @@ export default function TakeAttendance() {
       setSubjects(selectedClassroom.subjects || []);
     }
 
-    // 🔥 Fetch Students
+    // fetch students
     try {
       const data = await getStudentsByClassroom(classroomId);
 
@@ -66,20 +70,45 @@ export default function TakeAttendance() {
     setStudents(updated);
   };
 
-  // 🔹 Save Attendance
-  const handleSave = () => {
+  // 🔥 SAVE ATTENDANCE API
+  const handleSave = async () => {
     if (!selectedClassroomId || !selectedSubject) {
       alert("Please select classroom and subject ⚠️");
       return;
     }
 
-    console.log("Attendance Saved:", {
-      classroomId: selectedClassroomId,
-      subject: selectedSubject,
-      students,
-    });
+    try {
+      setSaving(true);
 
-    alert("Attendance Saved Successfully ✅");
+      // find subjectId
+      const selectedSub = subjects.find(
+        (s) => s.subjectName === selectedSubject
+      );
+
+      const payload = {
+        subjectId: selectedSub?.id,
+        date: new Date().toISOString().split("T")[0],
+        students: students.map((s) => ({
+          studentId: s.id,
+          status: s.status === "Present" ? "PRESENT" : "ABSENT",
+        })),
+      };
+
+      console.log("Payload:", payload);
+
+      await API.post(
+        `/attendance/${selectedClassroomId}/attendance`,
+        payload
+      );
+
+      alert("Attendance Saved Successfully ✅");
+
+    } catch (err) {
+      console.error("Error saving attendance:", err);
+      alert("Failed to save attendance ❌");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -97,9 +126,10 @@ export default function TakeAttendance() {
 
           <button
             onClick={handleSave}
+            disabled={saving}
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
           >
-            Save Attendance
+            {saving ? "Saving..." : "Save Attendance"}
           </button>
         </div>
 

@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import TeacherSidebar from "../components/Teacher_Sidebar";
+import API from "../../common/services/api";
 
 import {
   ClipboardCheck,
@@ -9,40 +11,61 @@ import {
 
 export default function TeacherDashboard() {
 
-  const stats = [
+  const [todayLectures, setTodayLectures] = useState([]);
 
+  const stats = [
     {
       title: "Classes Today",
-      value: 5,
+      value: todayLectures.length,
       icon: CalendarDays,
       color: "border-blue-500"
     },
-
     {
       title: "Attendance Pending",
-      value: 2,
+      value: todayLectures.length, // later dynamic karenge
       icon: ClipboardCheck,
       color: "border-green-500"
     },
-
     {
       title: "Homework Assigned",
       value: 12,
       icon: BookOpen,
       color: "border-purple-500"
     },
-
     {
       title: "Tests Created",
       value: 4,
       icon: FileText,
       color: "border-yellow-500"
     }
-
   ];
 
-  return (
+  // 🔥 API Call
+  useEffect(() => {
+    fetchTodayLectures();
+  }, []);
 
+  const fetchTodayLectures = async () => {
+    try {
+      const res = await API.get("/teacher/get_todayslects");
+
+      console.log("Today Lectures:", res.data);
+
+      setTodayLectures(res.data || []);
+    } catch (err) {
+      console.error("Error fetching lectures", err);
+    }
+  };
+
+  // 🔥 Sort lectures by time
+  const sortedLectures = [...todayLectures].sort((a, b) =>
+    a.startTime.localeCompare(b.startTime)
+  );
+
+  // 🔥 Current time
+  const now = new Date().toTimeString().slice(0, 5);
+
+  return (
     <div className="flex">
 
       <TeacherSidebar />
@@ -54,24 +77,19 @@ export default function TeacherDashboard() {
         </h1>
 
         {/* Stats Cards */}
-
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
 
           {stats.map((stat, index) => {
-
             const Icon = stat.icon;
 
             return (
-
               <div
                 key={index}
                 className={`bg-white p-6 rounded-xl shadow border-l-4 ${stat.color}`}
               >
-
                 <div className="flex justify-between items-center">
 
                   <div>
-
                     <p className="text-gray-500 text-sm">
                       {stat.title}
                     </p>
@@ -79,23 +97,16 @@ export default function TeacherDashboard() {
                     <h2 className="text-2xl font-bold">
                       {stat.value}
                     </h2>
-
                   </div>
 
                   <Icon size={28} />
-
                 </div>
-
               </div>
-
             );
-
           })}
-
         </div>
 
-        {/* Upcoming Classes */}
-
+        {/* Today's Schedule */}
         <div className="mt-8 bg-white p-6 rounded-xl shadow">
 
           <h2 className="text-xl font-bold mb-4">
@@ -104,27 +115,41 @@ export default function TeacherDashboard() {
 
           <ul className="space-y-3">
 
-            <li className="flex justify-between border-b pb-2">
-              <span>Math - Class 10</span>
-              <span>09:30 AM</span>
-            </li>
+            {sortedLectures.length === 0 ? (
+              <p className="text-gray-500">
+                No lectures today
+              </p>
+            ) : (
+              sortedLectures.map((lec, index) => {
 
-            <li className="flex justify-between border-b pb-2">
-              <span>Science - Class 9</span>
-              <span>11:00 AM</span>
-            </li>
+                const isActive =
+                  now >= lec.startTime && now <= lec.endTime;
 
-            <li className="flex justify-between">
-              <span>English - Class 8</span>
-              <span>01:00 PM</span>
-            </li>
+                return (
+                  <li
+                    key={index}
+                    className={`flex justify-between border-b pb-2 ${
+                      isActive
+                        ? "bg-green-100 px-2 rounded"
+                        : ""
+                    }`}
+                  >
+                    <span>
+                      {lec.subjectName} - {lec.className}
+                    </span>
+
+                    <span>
+                      {lec.startTime} - {lec.endTime}
+                    </span>
+                  </li>
+                );
+              })
+            )}
 
           </ul>
-
         </div>
 
         {/* Quick Actions */}
-
         <div className="mt-8 bg-white p-6 rounded-xl shadow">
 
           <h2 className="text-xl font-bold mb-4">
@@ -156,6 +181,5 @@ export default function TeacherDashboard() {
       </div>
 
     </div>
-
   );
 }
