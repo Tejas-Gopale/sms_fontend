@@ -95,7 +95,7 @@ const navigate = useNavigate();
       {/* Logo */}
       <div className="p-6 border-b">
         <h1 className="text-2xl font-bold text-blue-600">
-          School Panel
+          School Admin Dashboard
         </h1>
       </div>
 

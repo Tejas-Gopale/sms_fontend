@@ -1,95 +1,79 @@
 import { motion } from "framer-motion";
 
-export default function StudentTable({ students, loading }) {
+// 1. Destructure 'onView' from the props
+export default function StudentTable({ students, loading, onView }) {
 
   if (loading) {
-    return <p className="text-gray-500">Loading students...</p>;
+    return (
+      <div className="py-20 flex flex-col items-center gap-3">
+        <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-slate-500 animate-pulse">Syncing student records...</p>
+      </div>
+    );
   }
 
-  if (!students.length) {
-    return <p className="text-gray-500">No students found.</p>;
+  if (!students || !students.length) {
+    return (
+      <div className="p-8 text-center bg-white rounded-xl border border-dashed border-slate-200">
+        <p className="text-slate-500">No students found in this classroom.</p>
+      </div>
+    );
   }
 
   return (
-    <div className="bg-white rounded-xl shadow overflow-hidden">
-
+    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
       <div className="overflow-auto max-h-[600px]">
-
         <table className="w-full text-sm">
-
           {/* HEADER */}
-          <thead className="bg-gray-100 sticky top-0 z-10">
-            <tr className="text-gray-600 text-left">
-
-              <th className="p-3">Name</th>
-              <th className="p-3">Admission No</th>
-              <th className="p-3">Gender</th>
-              <th className="p-3">Section</th>
-              <th className="p-3">Roll No</th>
-              <th className="p-3">Email</th>
-              <th className="p-3 text-center">Status</th>
-              <th className="p-3 text-center">Action</th>
-
+          <thead className="bg-slate-50 sticky top-0 z-10 border-b border-slate-100">
+            <tr className="text-slate-600 text-left">
+              <th className="p-4 font-semibold">Name</th>
+              <th className="p-4 font-semibold">Admission No</th>
+              <th className="p-4 font-semibold">Gender</th>
+              <th className="p-4 font-semibold">Section</th>
+              <th className="p-4 font-semibold text-center">Status</th>
+              <th className="p-4 font-semibold text-center">Action</th>
             </tr>
           </thead>
 
           {/* BODY */}
           <tbody>
-
             {students.map((student, index) => (
               <motion.tr
                 key={student.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.03 }}
-                className="border-t hover:bg-gray-50 transition"
+                className="border-t border-slate-50 hover:bg-slate-50/80 transition"
               >
-
-                <td className="p-3 font-medium">
+                <td className="p-4 font-medium text-slate-800">
                   {student.firstName} {student.lastName}
                 </td>
+                <td className="p-4 text-slate-600">{student.admissionNumber}</td>
+                <td className="p-4 text-slate-600 capitalize">{student.gender}</td>
+                <td className="p-4 text-slate-600">{student.section || "N/A"}</td>
 
-                <td className="p-3">
-                  {student.admissionNumber}
-                </td>
-
-                <td className="p-3">
-                  {student.gender}
-                </td>
-
-                <td className="p-3">
-                  {student.section}
-                </td>
-
-                <td className="p-3">
-                  {student.rollNumber}
-                </td>
-
-                <td className="p-3">
-                  {student.user?.email}
-                </td>
-
-                {/* STATUS */}
-                <td className="p-3 text-center">
-                  <span className={`px-2 py-1 text-xs rounded ${
+                <td className="p-4 text-center">
+                  <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
                     student.active
-                      ? "bg-green-100 text-green-600"
-                      : "bg-red-100 text-red-600"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
                   }`}>
                     {student.active ? "Active" : "Inactive"}
                   </span>
                 </td>
 
-                {/* ACTION */}
-                <td className="p-3 text-center">
-                  <button className="text-blue-600 hover:underline text-sm">
+                <td className="p-4 text-center">
+                  {/* 2. Call onView(student) when clicked */}
+                  <button 
+                    onClick={() => onView(student)}
+                    className="text-indigo-600 hover:text-indigo-800 font-semibold transition-colors"
+                  >
                     View
                   </button>
                 </td>
-
               </motion.tr>
             ))}
-
           </tbody>
         </table>
       </div>
