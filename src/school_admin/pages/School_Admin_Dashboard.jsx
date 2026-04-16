@@ -3,7 +3,10 @@ import {
   Users,
   GraduationCap,
   BookOpen,
-  IndianRupee
+  IndianRupee,
+  Settings,
+  AlertCircle,
+  CheckCircle
 } from "lucide-react";
 
 import SchoolAdminSidebar from "../components/SchoolAdminSidebar";
@@ -16,7 +19,16 @@ export default function SchoolAdminDashboard() {
     total_Students: 0,
     total_Teachers: 0,
     totalClasses: 0,
-    fees_Colleced: 0
+    fees_Colleced: 0,
+    isPaymentConfigured: false // ✅ New state to check payment status
+  });
+
+  // Modal State for Payment Settings
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentConfig, setPaymentConfig] = useState({
+    apiKey: "",
+    apiSecret: "",
+    webhookSecret: ""
   });
 
   // ✅ API Call
@@ -27,6 +39,18 @@ export default function SchoolAdminDashboard() {
       setDashboardData(res.data);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
+    }
+  };
+
+  // ✅ Function to Save Razorpay Keys
+  const handleSavePaymentConfig = async () => {
+    try {
+      await API.post("/api/payments/update-config", paymentConfig);
+      alert("Payment Keys Updated Successfully!");
+      setShowPaymentModal(false);
+      getSchoolDashboardData(); // Refresh to update status
+    } catch (error) {
+      alert("Error saving config" , error);
     }
   };
 
@@ -74,38 +98,53 @@ export default function SchoolAdminDashboard() {
           School Admin Dashboard
         </h1>
 
+        {/* ✅ Payment Status Badge */}
+          <div className={`flex items-center px-4 py-2 rounded-full text-sm font-medium ${dashboardData.isPaymentConfigured ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+             {dashboardData.isPaymentConfigured ? <CheckCircle size={16} className="mr-2"/> : <AlertCircle size={16} className="mr-2"/>} 
+             {dashboardData.isPaymentConfigured ? "Payments Active" : "Payments Not Configured"} 
+          </div>
+        
+       {/* ✅ Payment Setup Notice (Only shows if not configured) */}
+       {!dashboardData.isPaymentConfigured && (
+          <div className="mb-8 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-xl shadow-sm flex justify-between items-center">
+            <div className="flex items-center">
+              <Settings className="text-yellow-600 mr-3" />
+              <div>
+                <p className="font-bold text-yellow-800">Payment Gateway Required</p>
+                <p className="text-yellow-700 text-sm">Please add your Razorpay keys to start collecting fees online.</p>
+              </div>
+            </div>
+            <button 
+              onClick={() => setShowPaymentModal(true)}
+              className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition"
+            >
+              Setup Now
+            </button>
+          </div>
+        )}
+
         {/* Dashboard Cards */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-
           {stats.map((stat, index) => {
-
             const Icon = stat.icon;
-
             return (
               <div
                 key={index}
                 className={`bg-white p-6 rounded-xl shadow border-l-4 ${stat.color}`}
               >
-
                 <div className="flex items-center justify-between">
-
                   <div>
                     <p className="text-gray-500 text-sm">
                       {stat.title}
                     </p>
-
                     <h2 className="text-2xl font-bold">
                       {stat.value}
                     </h2>
                   </div>
-
                   <Icon size={28} className="text-gray-600" />
-
                 </div>
-
               </div>
             );
-
           })}
 
         </div>
@@ -198,11 +237,67 @@ export default function SchoolAdminDashboard() {
             </button>
 
           </div>
+          {/* ✅ Payment Configuration Modal */}
+        {showPaymentModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
+              <h2 className="text-2xl font-bold mb-4">Razorpay Configuration</h2>
+              <p className="text-gray-500 text-sm mb-6">Enter your school's specific Razorpay API credentials.</p>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Razorpay Key ID</label>
+                  <input 
+                    type="text" 
+                    className="w-full border p-2 rounded-lg" 
+                    placeholder="rzp_live_..."
+                    value={paymentConfig.apiKey}
+                    onChange={(e) => setPaymentConfig({...paymentConfig, apiKey: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Razorpay Secret</label>
+                  <input 
+                    type="password" 
+                    className="w-full border p-2 rounded-lg"
+                    value={paymentConfig.apiSecret}
+                    onChange={(e) => setPaymentConfig({...paymentConfig, apiSecret: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Webhook Secret</label>
+                  <input 
+                    type="text" 
+                    className="w-full border p-2 rounded-lg"
+                    value={paymentConfig.webhookSecret}
+                    onChange={(e) => setPaymentConfig({...paymentConfig, webhookSecret: e.target.value})}
+                  />
+                </div>
+              </div>
 
+              <div className="flex justify-end mt-8 gap-3">
+                <button 
+                  onClick={() => setShowPaymentModal(false)}
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleSavePaymentConfig}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Save Configuration
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         </div>
 
       </div>
 
     </div>
+    
   );
+  
 }
