@@ -28,16 +28,17 @@ export default function TeacherDashboard() {
     },
     {
       title: "Homework Assigned",
-      value: 12,
+      value:  12, // later dynamic karenge
       icon: BookOpen,
       color: "border-purple-500"
     },
     {
       title: "Tests Created",
-      value: 4,
+      value: 4, // later dynamic karenge
       icon: FileText,
       color: "border-yellow-500"
     }
+     
   ];
 
   // 🔥 API Call

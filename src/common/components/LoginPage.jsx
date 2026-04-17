@@ -43,7 +43,7 @@ const LoginPage = () => {
       navigate("/school-admin/dashboard", { replace: true });
     }
 
-    else if (role === "TEACHER") {
+    else if (role === "TEACHER" || role === "CLASS_TEACHER" ) {
       navigate("/teachers/dashboard", { replace: true });
     }
 
