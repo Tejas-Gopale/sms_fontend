@@ -19,6 +19,7 @@ import Timetable from "./school_admin/pages/Timetable";
 import Notifications from "./school_admin/pages/Notifications";
 import Settings from "./school_admin/pages/Settings";
 import Teacher from "./school_admin/pages/AllTeachers";
+import ProfileSettings from "./school_admin/pages/ProfilePage";
 
 // Teacher Importing components
 import TeacherDashboard from "./teachers/pages/Teachers_Dashboard";
@@ -81,6 +82,7 @@ function App() {
         <Route path="/school-admin/timetable" element={<Timetable />} />
         <Route path="/school-admin/notifications" element={<Notifications />} />
         <Route path="/school-admin/settings" element={<Settings />} />
+        <Route path="/school-admin/profile-settings" element={<ProfileSettings />} />
       </> 
 
         {/* Teacher Routes */}

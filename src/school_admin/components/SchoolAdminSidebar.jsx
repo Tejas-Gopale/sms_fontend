@@ -12,8 +12,10 @@ import {
   FileText,
   Bell,
   Settings,
-  LogOut
+  LogOut,
+  User2Icon
 } from "lucide-react";
+import { Profiler } from "react";
 
 export default function SchoolAdminSidebar() {
 const navigate = useNavigate();
@@ -85,7 +87,12 @@ const navigate = useNavigate();
       icon: Settings,
       path: "/school-admin/settings"
     }
-
+    ,
+    {
+      name: "Profile Settings",
+      icon: User2Icon,
+      path: "/school-admin/profile-settings"
+    }
   ];
 
   return (

@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 
+
 // 1. Destructure 'onView' from the props
 export default function StudentTable({ students, loading, onView }) {
 
