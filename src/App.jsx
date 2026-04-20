@@ -48,7 +48,7 @@ import ProtectedRoute from "./common/routes/ProtectedRoute";
 import LoginPage from "./common/components/LoginPage";
 
 
-
+import Resetpasswordpage from "./common/components/Resetpasswordpage";
 
 function App() {
   return (
@@ -57,7 +57,8 @@ function App() {
 
         {/* Login Route */}
         <Route path="/" element={<LoginPage />} />
-
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/reset-password" element={<Resetpasswordpage />} />
       <>
         {/* Super Admin Routes */}
         <Route path="/super-admin/dashboard" element={ <ProtectedRoute role="SUPER_ADMIN"> <SuperAdminHome /> </ProtectedRoute>} />
