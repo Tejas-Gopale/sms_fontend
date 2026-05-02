@@ -49,6 +49,7 @@ import LoginPage from "./common/components/LoginPage";
 
 
 import Resetpasswordpage from "./common/components/Resetpasswordpage";
+import VisitorManagementPage from "./school_admin/pages/Visitormanagementpage";
 
 function App() {
   return (
@@ -84,6 +85,7 @@ function App() {
         <Route path="/school-admin/notifications" element={<Notifications />} />
         <Route path="/school-admin/settings" element={<Settings />} />
         <Route path="/school-admin/profile-settings" element={<ProfileSettings />} />
+       <Route path="/school-admin/visitors" element={<VisitorManagementPage />} />
       </> 
 
         {/* Teacher Routes */}
