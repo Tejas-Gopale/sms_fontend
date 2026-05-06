@@ -41,7 +41,7 @@ const EMPTY_FORM = {
 
 // ─── API Functions ────────────────────────────────────────────────────────────
 
-const getBase = (schoolId) => `/api/schools/${schoolId}/visitors`;
+const getBase = (schoolId) => `/schools/${schoolId}/visitors`;
 
 const apiGetByDate   = async (schoolId, date)    => (await API.get(`${getBase(schoolId)}/by-date?date=${date}`)).data;
 const apiGetSummary  = async (schoolId, date)    => (await API.get(`${getBase(schoolId)}/summary/day?date=${date}`)).data;

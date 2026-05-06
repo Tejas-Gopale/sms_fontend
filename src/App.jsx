@@ -50,6 +50,10 @@ import LoginPage from "./common/components/LoginPage";
 
 import Resetpasswordpage from "./common/components/Resetpasswordpage";
 import VisitorManagementPage from "./school_admin/pages/Visitormanagementpage";
+import StaffManagement from "./school_admin/pages/StaffManagement";
+import LibraryManagement from "./school_admin/pages/LibraryManagement";
+import TransportManagement from "./school_admin/pages/TransportManagement";
+import HostelManagement from "./school_admin/pages/HostelManagement";
 
 function App() {
   return (
@@ -85,8 +89,18 @@ function App() {
         <Route path="/school-admin/notifications" element={<Notifications />} />
         <Route path="/school-admin/settings" element={<Settings />} />
         <Route path="/school-admin/profile-settings" element={<ProfileSettings />} />
-       <Route path="/school-admin/visitors" element={<VisitorManagementPage />} />
-      </> 
+        <Route path="/school-admin/visitors" element={<VisitorManagementPage />} />
+        <Route path="/school-admin/analytics" element={<SchoolAdminDashboard />} /> {/* Placeholder for Analytics & Reports page */}
+        <Route path="/school-admin/events" element={<SchoolAdminDashboard />} /> {/* Placeholder for Event Management page */}
+        <Route path="/school-admin/alumni" element={<SchoolAdminDashboard />} /> {/* Placeholder for Alumni Management page */}
+        <Route path="/school-admin/health" element={<SchoolAdminDashboard />} /> {/* Placeholder for Health & Wellness page */}
+        <Route path="/school-admin/communication" element={<SchoolAdminDashboard />} /> {/* Placeholder for Communication page */}
+        <Route path="/school-admin/library" element={<LibraryManagement />} /> {/* Placeholder for Library Management page */}
+        <Route path="/school-admin/transport" element={<TransportManagement />} /> {/* Placeholder for Transport Management page */}
+        <Route path="/school-admin/hostel" element={<HostelManagement />} /> {/* Placeholder for Hostel Management page */}
+        <Route path="/school-admin/inventory" element={<SchoolAdminDashboard />} /> {/* Placeholder for Inventory Management page */}
+        <Route path="/school-admin/staff" element={<StaffManagement />} /> {/* Placeholder for Staff Management page */}
+        </> 
 
         {/* Teacher Routes */}
 

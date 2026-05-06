@@ -35,7 +35,17 @@ export default function SchoolAdminSidebar() {
     { name: "Timetable",         icon: CalendarDays,    path: "/school-admin/timetable"         },
     { name: "Fees Management",   icon: IndianRupee,     path: "/school-admin/fees"              },
     { name: "Exams & Results",   icon: FileText,        path: "/school-admin/exams"             },
+    {name : "Staff Management", icon: Users,           path: "/school-admin/staff"             }, // ← NEW
     { name: "Visitor Management",icon: UserCheck,       path: "/school-admin/visitors"          }, // ← NEW
+    {name : "Library Management", icon: BookOpen,        path: "/school-admin/library"           }, // ← NEW
+    {name : "Transport Management", icon: Users,           path: "/school-admin/transport"         }, // ← NEW
+    {name : "Hostel Management", icon: Users,           path: "/school-admin/hostel"            }, // ← NEW
+    {name : "Inventory Management", icon: Users,           path: "/school-admin/inventory"         }, // ← NEW
+    {name : "Event Management", icon: CalendarDays,    path: "/school-admin/events"            }, // ← NEW
+    {name : "Alumni Management", icon: Users,           path: "/school-admin/alumni"            }, // ← NEW
+    {name : "Health & Wellness", icon: Users,           path: "/school-admin/health"            }, // ← NEW
+    {name : "Communication", icon: Bell,            path: "/school-admin/communication"     }, // ← NEW
+    {name : "Analytics & Reports", icon: LayoutDashboard, path: "/school-admin/analytics"         }, // ← NEW
     { name: "Notifications",     icon: Bell,            path: "/school-admin/notifications"     },
     { name: "Settings",          icon: Settings,        path: "/school-admin/settings"          },
     { name: "Profile Settings",  icon: User2Icon,       path: "/school-admin/profile-settings"  },
