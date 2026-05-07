@@ -1,7 +1,8 @@
 import axios from "axios";
 
+// API Instance Configuration
 const API = axios.create({
-  baseURL: "http://localhost:8085/api/v1",
+  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8085/api/v1",
   headers: {
     "Content-Type": "application/json",
   },
@@ -30,11 +31,9 @@ const processQueue = (error, token = null) => {
 API.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("accessToken");
-
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
     }
-
     return config;
   },
   (error) => Promise.reject(error)
@@ -48,24 +47,18 @@ API.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // ❌ If not 401 → reject
     if (!error.response || error.response.status !== 401) {
       return Promise.reject(error);
     }
 
-    // ❌ Prevent infinite loop
     if (originalRequest._retry) {
       return Promise.reject(error);
     }
 
-    // ❌ Ignore refresh API itself
     if (originalRequest.url?.includes("/auth/refresh-token")) {
       return Promise.reject(error);
     }
 
-    // ─────────────────────────────
-    // Queue requests if refresh running
-    // ─────────────────────────────
     if (isRefreshing) {
       return new Promise((resolve, reject) => {
         failedQueue.push({ resolve, reject });
@@ -77,9 +70,6 @@ API.interceptors.response.use(
         .catch((err) => Promise.reject(err));
     }
 
-    // ─────────────────────────────
-    // Start refresh
-    // ─────────────────────────────
     originalRequest._retry = true;
     isRefreshing = true;
 
@@ -92,38 +82,25 @@ API.interceptors.response.use(
 
     try {
       const response = await axios.post(
-        "http://localhost:8085/api/v1/auth/refresh-token",
+        `${API.defaults.baseURL}/auth/refresh-token`,
         { refreshToken },
-        {
-          headers: { "Content-Type": "application/json" },
-        }
+        { headers: { "Content-Type": "application/json" } }
       );
 
-      console.log("Refresh Response:", response.data);
+      const { accessToken, refreshToken: newRefreshToken } = response.data;
 
-      const newAccessToken = response.data.accessToken;
-      const newRefreshToken = response.data.refreshToken;
+      if (!accessToken) throw new Error("No access token received");
 
-      if (!newAccessToken) {
-        throw new Error("No access token received");
-      }
-
-      // Save tokens
-      localStorage.setItem("accessToken", newAccessToken);
+      localStorage.setItem("accessToken", accessToken);
       if (newRefreshToken) {
         localStorage.setItem("refreshToken", newRefreshToken);
       }
 
-      // Update axios default header
-      API.defaults.headers.common["Authorization"] = `Bearer ${newAccessToken}`;
+      API.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
+      processQueue(null, accessToken);
 
-      // Process queue
-      processQueue(null, newAccessToken);
-
-      // Retry original request
-      originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
+      originalRequest.headers["Authorization"] = `Bearer ${accessToken}`;
       return API(originalRequest);
-
     } catch (err) {
       processQueue(err, null);
       forceLogout();
@@ -145,12 +122,52 @@ function forceLogout() {
 }
 
 // ─────────────────────────────────────────────
-// API CALLS
+// ADMISSION SERVICE (Using common API instance)
+// ─────────────────────────────────────────────
+export const admissionService = {
+  /** Parent submits inquiry */
+  submitInquiry: (schoolId, data) =>
+    API.post(`/admission/schools/${schoolId}/inquire`, data),
+
+
+  /** Paginated inquiry list */
+  getInquiries: (schoolId, status = "", page = 0, size = 20) => {
+    const params = { page, size };
+    if (status) params.status = status;
+    return API.get(`/admission/schools/${schoolId}`, { params });
+  },
+
+  /** Single inquiry by ID */
+  getInquiry: (inquiryId) => API.get(`/admission/${inquiryId}`),
+
+  /** Update status — APPROVED / REJECTED etc. */
+  updateStatus: (inquiryId, data) =>
+    API.put(`/admission/${inquiryId}/status`, data),
+
+  /** Dashboard stats */
+  getStats: (schoolId) => API.get(`/admission/schools/${schoolId}/dashboard`),
+
+  /** Convert inquiry to student */
+  grantAdmission: (data) => API.post(`/admission/grant`, data),
+
+  /** Direct / Walk-in Admission */
+  directAdmit: (data) =>
+  API.post(`/admission/direct`, data, {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+    },
+  }),
+
+};
+
+// ─────────────────────────────────────────────
+// OTHER API CALLS
 // ─────────────────────────────────────────────
 export const getStudents = async (page = 0, size = 10) => {
-  const res = await API.get(
-    `/school-admin/getStudentDetails?page=${page}&size=${size}`
-  );
+  const res = await API.get(`/school-admin/getStudentDetails`, {
+    params: { page, size },
+  });
   return res.data;
 };
 
@@ -165,43 +182,3 @@ export const getStudentsByClassroom = async (classroomId) => {
 };
 
 export default API;
-
-// import axios from "axios";
-
-// const API = axios.create({
-//   baseURL: "http://localhost:8085/api/v1",
-//   headers: {
-//     "Content-Type": "application/json"
-//   }
-// });
-
-// API.interceptors.request.use(
-//   (config) => {
-//     const token = localStorage.getItem("accessToken"); // FIXED
-//     console.log("Attaching token to request:", token); // DEBUG LOG
-//     if (token) {
-//       config.headers.Authorization = `Bearer ${token}`;
-//     }
-//     return config;
-//   },
-  
-//   (error) => Promise.reject(error)
-// );
-
-// export const getStudents = async (page = 0, size = 10) => {
-//   const res = await API.get(`/school-admin/getStudentDetails?page=${page}&size=${size}`);
-//   return res.data;
-// };
-
-// // Get all classrooms
-// export const getClassrooms = async () => {
-//   const res = await API.get("/school-admin/getClassRoom");
-//   return res.data;
-// };
-
-// // Get students by classroom
-// export const getStudentsByClassroom = async (classroomId) => {
-//   const res = await API.get(`/classroom/${classroomId}/students`);
-//   return res.data;
-// };
-// export default API;

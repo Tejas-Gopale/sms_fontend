@@ -54,6 +54,7 @@ import StaffManagement from "./school_admin/pages/StaffManagement";
 import LibraryManagement from "./school_admin/pages/LibraryManagement";
 import TransportManagement from "./school_admin/pages/TransportManagement";
 import HostelManagement from "./school_admin/pages/HostelManagement";
+import AdmissionManagement from "./school_admin/pages/AdmissionManagement";
 
 function App() {
   return (
@@ -100,6 +101,7 @@ function App() {
         <Route path="/school-admin/hostel" element={<HostelManagement />} /> {/* Placeholder for Hostel Management page */}
         <Route path="/school-admin/inventory" element={<SchoolAdminDashboard />} /> {/* Placeholder for Inventory Management page */}
         <Route path="/school-admin/staff" element={<StaffManagement />} /> {/* Placeholder for Staff Management page */}
+        <Route path="/school-admin/admissions" element={<AdmissionManagement />} /> {/* Placeholder for Admission Management page */}
         </> 
 
         {/* Teacher Routes */}
