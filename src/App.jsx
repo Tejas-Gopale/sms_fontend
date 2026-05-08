@@ -55,6 +55,9 @@ import LibraryManagement from "./school_admin/pages/LibraryManagement";
 import TransportManagement from "./school_admin/pages/TransportManagement";
 import HostelManagement from "./school_admin/pages/HostelManagement";
 import AdmissionManagement from "./school_admin/pages/AdmissionManagement";
+import EventManagement from "./school_admin/pages/EventManagement";
+import TeacherTimetable from "./teachers/pages/Timetable";
+import TeacherSettings from "./teachers/pages/Teacher_settings";
 
 function App() {
   return (
@@ -92,7 +95,7 @@ function App() {
         <Route path="/school-admin/profile-settings" element={<ProfileSettings />} />
         <Route path="/school-admin/visitors" element={<VisitorManagementPage />} />
         <Route path="/school-admin/analytics" element={<SchoolAdminDashboard />} /> {/* Placeholder for Analytics & Reports page */}
-        <Route path="/school-admin/events" element={<SchoolAdminDashboard />} /> {/* Placeholder for Event Management page */}
+        <Route path="/school-admin/events" element={<EventManagement />} /> {/* Placeholder for Event Management page */}
         <Route path="/school-admin/alumni" element={<SchoolAdminDashboard />} /> {/* Placeholder for Alumni Management page */}
         <Route path="/school-admin/health" element={<SchoolAdminDashboard />} /> {/* Placeholder for Health & Wellness page */}
         <Route path="/school-admin/communication" element={<SchoolAdminDashboard />} /> {/* Placeholder for Communication page */}
@@ -102,6 +105,7 @@ function App() {
         <Route path="/school-admin/inventory" element={<SchoolAdminDashboard />} /> {/* Placeholder for Inventory Management page */}
         <Route path="/school-admin/staff" element={<StaffManagement />} /> {/* Placeholder for Staff Management page */}
         <Route path="/school-admin/admissions" element={<AdmissionManagement />} /> {/* Placeholder for Admission Management page */}
+        <Route path="/school-admin/events" element={<EventManagement />} /> {/* Placeholder for Event Management page */}
         </> 
 
         {/* Teacher Routes */}
@@ -114,6 +118,8 @@ function App() {
         <Route path="/teacher/remarks" element={<StudentRemarks />} />
         <Route path="/teacher/salary" element={<Teacher_Salary />} />
         <Route path="/teacher/notifications" element={<TeacherNotifications />} />
+        <Route path="/teacher/timetable" element={<TeacherTimetable />} />
+        <Route path="/teacher/settings" element={<TeacherSettings />} />
         {/* Add more routes for teachers, students, etc. */}
 
         <Route path="/parents/dashboard" element={<ParentDashboard />} />
