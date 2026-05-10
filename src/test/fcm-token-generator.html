@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FCM Token Generator</title>
+  <style>
+    body { font-family: monospace; padding: 30px; background: #0f172a; color: #e2e8f0; }
+    h2 { color: #818cf8; }
+    #token { background: #1e293b; padding: 16px; border-radius: 8px; word-break: break-all; margin: 16px 0; border: 1px solid #334155; font-size: 13px; color: #34d399; }
+    #error { color: #f87171; background: #1e293b; padding: 16px; border-radius: 8px; margin: 16px 0; white-space: pre-wrap; }
+    #status { color: #fbbf24; margin: 8px 0; }
+    button { background: #4f46e5; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+<h2>🔑 FCM Token Generator</h2>
+<p id="status">⏳ Initializing...</p>
+<div id="token" style="display:none"></div>
+<div id="error" style="display:none"></div>
+<button id="copyBtn" style="display:none" onclick="copyToken()">📋 Copy Token</button>
+
+<script>
+  const FIREBASE_CONFIG = {
+    apiKey:            "AIzaSyA2-IW_ouVfJyHiLXoNK9TV3RLOHbgh-BM",
+    authDomain:        "sas-schoolmanagement-software.firebaseapp.com",
+    projectId:         "sas-schoolmanagement-software",
+    storageBucket:     "sas-schoolmanagement-software.firebasestorage.app",
+    messagingSenderId: "1008895936440",
+    appId:             "1:1008895936440:web:409daa4974271b6ce9f14d",
+    measurementId:     "G-EL05L7618H"
+  };
+  const VAPID_KEY = "BPpmI_MdgvUeH2PrfgLPsMZBWPiPAovUZgY61_6XBAOCbuSzXWHfkKgxsX02qAkb8yrrgHB6O45x5CtpK2xa2uQ";
+
+  const status  = document.getElementById("status");
+  const tokenEl = document.getElementById("token");
+  const errorEl = document.getElementById("error");
+  const copyBtn = document.getElementById("copyBtn");
+  let currentToken = "";
+
+  function showError(msg) {
+    status.textContent    = "❌ Error";
+    errorEl.style.display = "block";
+    errorEl.textContent   = msg;
+  }
+
+  async function init() {
+    try {
+      status.textContent = "🔔 Requesting permission...";
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        showError("Permission denied! Address bar → 🔒 → Notifications → Allow → Refresh.");
+        return;
+      }
+
+      status.textContent = "⚙️ Registering service worker...";
+      // ✅ Real file path — NO blob URL
+      const swReg = await navigator.serviceWorker.register("firebase-messaging-sw.js");
+      await navigator.serviceWorker.ready;
+
+      status.textContent = "🔥 Connecting to Firebase...";
+      const { initializeApp }          = await import("https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js");
+      const { getMessaging, getToken } = await import("https://www.gstatic.com/firebasejs/10.0.0/firebase-messaging.js");
+
+      const app       = initializeApp(FIREBASE_CONFIG);
+      const messaging = getMessaging(app);
+
+      status.textContent = "🎯 Getting FCM token...";
+      const token = await getToken(messaging, {
+        vapidKey: VAPID_KEY,
+        serviceWorkerRegistration: swReg,
+      });
+
+      if (!token) { showError("Token empty. F12 Console mein error dekho."); return; }
+
+      currentToken          = token;
+      status.textContent    = "✅ Token ready!";
+      tokenEl.style.display = "block";
+      tokenEl.textContent   = token;
+      copyBtn.style.display = "inline-block";
+
+    } catch (err) {
+      showError("Error: " + err.message);
+      console.error(err);
+    }
+  }
+
+  function copyToken() {
+    navigator.clipboard.writeText(currentToken).then(() => {
+      copyBtn.textContent = "✅ Copied!";
+      setTimeout(() => copyBtn.textContent = "📋 Copy Token", 2000);
+    });
+  }
+
+  init();
+</script>
+</body>
+</html>

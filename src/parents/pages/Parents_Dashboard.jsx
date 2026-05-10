@@ -1,5 +1,5 @@
 import ParentSidebar from "../components/ParentSidebar";
-
+import { useFCM } from '../../common/hooks/useFCM';
 import {
   ClipboardCheck,
   BookOpen,
@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 export default function ParentDashboard() {
-
+  useFCM();
   const stats = [
 
     {
