@@ -19,7 +19,6 @@ import Timetable from "./school_admin/pages/Timetable";
 import Notifications from "./school_admin/pages/Notifications";
 import Settings from "./school_admin/pages/Settings";
 import Teacher from "./school_admin/pages/AllTeachers";
-import ProfileSettings from "./school_admin/pages/ProfilePage";
 
 // Teacher Importing components
 import TeacherDashboard from "./teachers/pages/Teachers_Dashboard";
@@ -58,6 +57,7 @@ import AdmissionManagement from "./school_admin/pages/AdmissionManagement";
 import EventManagement from "./school_admin/pages/EventManagement";
 import TeacherTimetable from "./teachers/pages/Timetable";
 import TeacherSettings from "./teachers/pages/Teacher_settings";
+import ProfilePage from "./profile/ProfilePage";
 
 function App() {
   return (
@@ -92,7 +92,7 @@ function App() {
         <Route path="/school-admin/timetable" element={<Timetable />} />
         <Route path="/school-admin/notifications" element={<Notifications />} />
         <Route path="/school-admin/settings" element={<Settings />} />
-        <Route path="/school-admin/profile-settings" element={<ProfileSettings />} />
+        <Route path="/school-admin/profile-settings" element={<ProfilePage   />} /> {/* Placeholder for Profile Settings page */}
         <Route path="/school-admin/visitors" element={<VisitorManagementPage />} />
         <Route path="/school-admin/analytics" element={<SchoolAdminDashboard />} /> {/* Placeholder for Analytics & Reports page */}
         <Route path="/school-admin/events" element={<EventManagement />} /> {/* Placeholder for Event Management page */}
@@ -120,6 +120,7 @@ function App() {
         <Route path="/teacher/notifications" element={<TeacherNotifications />} />
         <Route path="/teacher/timetable" element={<TeacherTimetable />} />
         <Route path="/teacher/settings" element={<TeacherSettings />} />
+        <Route path="/teacher/profile-settings" element={<ProfilePage />} /> {/* Placeholder for Profile Settings page */}
         {/* Add more routes for teachers, students, etc. */}
 
         <Route path="/parents/dashboard" element={<ParentDashboard />} />
@@ -134,10 +135,10 @@ function App() {
         <Route path="/parent/notifications" element={<ParentNotifications />} />
         <Route path="/parent/settings" element={<ParentSettings />} />
         <Route path="/parent/timetable" element={<ParentTimeTable />} />
-        
+        <Route path="/parent/profile-settings" element={<ProfilePage />} /> {/* Placeholder for Profile Settings page */}
       </Routes>
     </BrowserRouter>
   );
 }
 
-export default App;
+export default App; 

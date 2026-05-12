@@ -2,11 +2,50 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import SchoolAdminSidebar from "../components/SchoolAdminSidebar";
 import API from "../../common/services/api";
-import { Search, Plus, ArrowUpDown, Upload, X, FileText, ChevronLeft, ChevronRight } from "lucide-react";
+import { getUserData } from "../../common/utils/tokenStorage";
+import {
+  Search, Plus, ArrowUpDown, Upload, X,
+  FileText, ChevronLeft, ChevronRight, User,
+} from "lucide-react";
+
+// ── small reusable field ──────────────────────────────────────────────────────
+function Field({ label, name, type = "text", value, onChange, required, placeholder }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+        {label}{required && <span className="text-rose-500 ml-0.5">*</span>}
+      </label>
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder || label}
+        required={required}
+        className="border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white
+                   focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent
+                   placeholder:text-slate-300 transition"
+      />
+    </div>
+  );
+}
+
+const EMPTY_FORM = {
+  fullName: "",
+  email: "",
+  phoneNumber: "",
+  password: "",
+  employeeId: "",
+  qualification: "",
+  subjectSpecialization: "",
+  joiningDate: "",
+  salary: "",
+};
 
 export default function Teachers() {
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
+
   // PAGINATION
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -20,11 +59,19 @@ export default function Teachers() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  // MODAL
+  // BULK UPLOAD MODAL (untouched)
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
 
+  // ── ADD TEACHER MODAL ──────────────────────────────────────────────────────
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [adding, setAdding] = useState(false);
+  const [addError, setAddError] = useState("");
+  const [addSuccess, setAddSuccess] = useState(false);
+
+  // ── debounce search ────────────────────────────────────────────────────────
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
@@ -61,6 +108,7 @@ export default function Teachers() {
     }
   };
 
+  // ── bulk upload (ORIGINAL — untouched) ────────────────────────────────────
   const handleUpload = async () => {
     if (!selectedFile) return;
     try {
@@ -74,22 +122,66 @@ export default function Teachers() {
       setSelectedFile(null);
       fetchTeachers();
     } catch (err) {
-      alert("Upload failed ❌",err);
+      alert("Upload failed ❌", err);
     } finally {
       setUploading(false);
     }
   };
 
+  // ── ADD TEACHER handlers ───────────────────────────────────────────────────
+  const handleFormChange = (e) =>
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+
+  const openAddModal = () => {
+    setForm(EMPTY_FORM);
+    setAddError("");
+    setAddSuccess(false);
+    setShowAddModal(true);
+  };
+
+  const handleAddTeacher = async (e) => {
+    e.preventDefault();
+    setAddError("");
+    setAdding(true);
+
+    try {
+      const userData = getUserData();
+      const schoolId = userData?.schoolId || localStorage.getItem("schoolId");
+
+      const payload = {
+        ...form,
+        schoolId: schoolId ? Number(schoolId) : undefined,
+        salary: form.salary ? Number(form.salary) : undefined,
+        joiningDate: form.joiningDate || undefined,
+      };
+
+      await API.post("/school-admin/create-teachers", payload);
+
+      setAddSuccess(true);
+      setTimeout(() => {
+        setShowAddModal(false);
+        setAddSuccess(false);
+        fetchTeachers(); // refresh list
+      }, 1400);
+    } catch (err) {
+      const msg = err?.response?.data;
+      setAddError(typeof msg === "string" ? msg : "Failed to add teacher. Please try again.");
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  // ────────────────────────────────────────────────────────────────────────────
   return (
     <div className="flex min-h-screen bg-[#F8FAFC]">
       <SchoolAdminSidebar />
 
       <main className="flex-1 p-8">
-        {/* HEADER SECTION */}
+        {/* HEADER */}
         <div className="flex justify-between items-end mb-8">
           <div>
-            <motion.h1 
-              initial={{ opacity: 0, x: -20 }} 
+            <motion.h1
+              initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               className="text-3xl font-extrabold text-slate-800 tracking-tight"
             >
@@ -99,19 +191,25 @@ export default function Teachers() {
           </div>
 
           <div className="flex gap-3">
+            {/* ── Bulk Import (ORIGINAL) ── */}
             <button
               onClick={() => setShowUploadModal(true)}
               className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-all shadow-sm font-medium"
             >
               <Upload size={18} /> Bulk Import
             </button>
-            <button className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100 font-medium">
+
+            {/* ── Add Teacher (NEW) ── */}
+            <button
+              onClick={openAddModal}
+              className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100 font-medium"
+            >
               <Plus size={18} /> Add Teacher
             </button>
           </div>
         </div>
 
-        {/* MAIN CONTENT CARD */}
+        {/* MAIN CARD */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -140,13 +238,13 @@ export default function Teachers() {
               <thead>
                 <tr className="bg-slate-50/50">
                   {["userName", "email", "qualification", "subjectSpecialization"].map((col) => (
-                    <th 
+                    <th
                       key={col}
                       onClick={() => handleSort(col)}
                       className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-indigo-600 transition-colors"
                     >
                       <div className="flex items-center gap-2">
-                        {col.replace(/([A-Z])/g, ' $1')}
+                        {col.replace(/([A-Z])/g, " $1")}
                         <ArrowUpDown size={14} className={sortBy === col ? "text-indigo-600" : "text-slate-300"} />
                       </div>
                     </th>
@@ -157,7 +255,9 @@ export default function Teachers() {
                 {loading ? (
                   [...Array(5)].map((_, i) => (
                     <tr key={i} className="animate-pulse">
-                      <td colSpan="4" className="p-6"><div className="h-4 bg-slate-100 rounded w-full"></div></td>
+                      <td colSpan="4" className="p-6">
+                        <div className="h-4 bg-slate-100 rounded w-full" />
+                      </td>
                     </tr>
                   ))
                 ) : teachers.length === 0 ? (
@@ -177,7 +277,9 @@ export default function Teachers() {
                       </td>
                       <td className="px-6 py-4 text-slate-600">{t.email || "-"}</td>
                       <td className="px-6 py-4 text-slate-600">
-                        <span className="px-2 py-1 rounded bg-slate-100 text-xs font-medium">{t.qualification || "-"}</span>
+                        <span className="px-2 py-1 rounded bg-slate-100 text-xs font-medium">
+                          {t.qualification || "-"}
+                        </span>
                       </td>
                       <td className="px-6 py-4">
                         <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold ring-1 ring-inset ring-indigo-700/10">
@@ -191,7 +293,7 @@ export default function Teachers() {
             </table>
           </div>
 
-          {/* FOOTER / PAGINATION */}
+          {/* PAGINATION */}
           <div className="p-5 border-t border-slate-100 flex items-center justify-between">
             <p className="text-sm text-slate-500">
               Page <span className="font-semibold text-slate-700">{page + 1}</span> of {totalPages}
@@ -199,7 +301,7 @@ export default function Teachers() {
             <div className="flex gap-2">
               <button
                 disabled={page === 0}
-                onClick={() => setPage(p => p - 1)}
+                onClick={() => setPage((p) => p - 1)}
                 className="p-2 border rounded-lg hover:bg-slate-50 disabled:opacity-30 transition-all"
               >
                 <ChevronLeft size={20} />
@@ -210,7 +312,9 @@ export default function Teachers() {
                     key={p}
                     onClick={() => setPage(p)}
                     className={`w-10 h-10 rounded-lg text-sm font-medium transition-all ${
-                      page === p ? "bg-indigo-600 text-white shadow-md shadow-indigo-200" : "hover:bg-slate-100 text-slate-600"
+                      page === p
+                        ? "bg-indigo-600 text-white shadow-md shadow-indigo-200"
+                        : "hover:bg-slate-100 text-slate-600"
                     }`}
                   >
                     {p + 1}
@@ -219,7 +323,7 @@ export default function Teachers() {
               </div>
               <button
                 disabled={page >= totalPages - 1}
-                onClick={() => setPage(p => p + 1)}
+                onClick={() => setPage((p) => p + 1)}
                 className="p-2 border rounded-lg hover:bg-slate-50 disabled:opacity-30 transition-all"
               >
                 <ChevronRight size={20} />
@@ -229,16 +333,18 @@ export default function Teachers() {
         </motion.div>
       </main>
 
-      {/* MODERN MODAL */}
+      {/* ═══════════════════════════════════════════════════════════════════════
+          BULK IMPORT MODAL — ORIGINAL, UNTOUCHED
+      ═══════════════════════════════════════════════════════════════════════ */}
       <AnimatePresence>
         {showUploadModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setShowUploadModal(false)}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" 
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
             />
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
@@ -246,7 +352,9 @@ export default function Teachers() {
             >
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold text-slate-800">Bulk Teacher Upload</h3>
-                <button onClick={() => setShowUploadModal(false)} className="text-slate-400 hover:text-slate-600"><X size={24} /></button>
+                <button onClick={() => setShowUploadModal(false)} className="text-slate-400 hover:text-slate-600">
+                  <X size={24} />
+                </button>
               </div>
 
               <label className="group flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-50 hover:border-indigo-400 transition-all mb-6">
@@ -255,7 +363,9 @@ export default function Teachers() {
                     <FileText size={28} />
                   </div>
                   <p className="text-sm text-slate-600">
-                    {selectedFile ? <span className="font-semibold text-indigo-600">{selectedFile.name}</span> : "Click to upload Excel file"}
+                    {selectedFile
+                      ? <span className="font-semibold text-indigo-600">{selectedFile.name}</span>
+                      : "Click to upload Excel file"}
                   </p>
                 </div>
                 <input type="file" className="hidden" accept=".xlsx" onChange={(e) => setSelectedFile(e.target.files[0])} />
@@ -268,6 +378,99 @@ export default function Teachers() {
               >
                 {uploading ? "Processing..." : "Confirm Upload"}
               </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          ADD TEACHER MODAL — NEW
+      ═══════════════════════════════════════════════════════════════════════ */}
+      <AnimatePresence>
+        {showAddModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setShowAddModal(false)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            />
+
+            {/* modal box */}
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl w-full max-w-lg shadow-2xl relative z-10 overflow-hidden"
+            >
+              {/* modal header */}
+              <div className="flex items-center justify-between px-7 py-5 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center">
+                    <User size={18} className="text-indigo-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-800">Add New Teacher</h3>
+                    <p className="text-xs text-slate-400">All fields marked * are required</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-600 transition">
+                  <X size={22} />
+                </button>
+              </div>
+
+              {/* form */}
+              <form onSubmit={handleAddTeacher} className="px-7 py-5 max-h-[70vh] overflow-y-auto">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <Field label="Full Name"  name="fullName"  value={form.fullName}  onChange={handleFormChange} required />
+                  </div>
+                  <Field label="Email"       name="email"      type="email"    value={form.email}       onChange={handleFormChange} required />
+                  <Field label="Phone"       name="phoneNumber" type="tel"     value={form.phoneNumber} onChange={handleFormChange} required />
+                  <Field label="Password"    name="password"   type="password" value={form.password}    onChange={handleFormChange} required placeholder="Min 6 characters" />
+                  <Field label="Employee ID" name="employeeId"                 value={form.employeeId}  onChange={handleFormChange} />
+                  <Field label="Qualification" name="qualification"            value={form.qualification} onChange={handleFormChange} placeholder="e.g. B.Ed, M.Sc" />
+                  <Field label="Subject Specialization" name="subjectSpecialization" value={form.subjectSpecialization} onChange={handleFormChange} placeholder="e.g. Mathematics" />
+                  <Field label="Joining Date" name="joiningDate" type="date"   value={form.joiningDate} onChange={handleFormChange} />
+                  <Field label="Salary (₹)"  name="salary"    type="number"   value={form.salary}      onChange={handleFormChange} placeholder="e.g. 35000" />
+                </div>
+
+                {/* error */}
+                {addError && (
+                  <div className="mt-4 px-4 py-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-sm">
+                    {addError}
+                  </div>
+                )}
+
+                {/* success */}
+                {addSuccess && (
+                  <div className="mt-4 px-4 py-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-sm font-medium">
+                    ✅ Teacher added successfully!
+                  </div>
+                )}
+
+                {/* actions */}
+                <div className="flex gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="flex-1 py-2.5 border border-slate-200 rounded-xl text-slate-600 text-sm font-semibold hover:bg-slate-50 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={adding || addSuccess}
+                    className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold
+                               shadow-md shadow-indigo-200 hover:bg-indigo-700
+                               disabled:opacity-60 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
+                  >
+                    {adding
+                      ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>Adding…</>
+                      : "Add Teacher"}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}
