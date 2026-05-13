@@ -57,7 +57,7 @@ export default function Classes() {
 
   // ================= ACTIONS =================
   const createClass = async () => {
-    await API.post("/school-admin/createClassRoom", { grade, section });
+    await API.post("/school-admin/classroom/create", { grade, section });
     setShowClassModal(false);
     setGrade("");
     setSection("");
