@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import SchoolAdminSidebar from "../components/SchoolAdminSidebar";
-import { Plus, LayoutGrid, Table, Upload, X, UserPlus, Check } from "lucide-react";
+import { Plus, LayoutGrid, Table, Upload, X, UserPlus, Check, BookPlus } from "lucide-react";
 import API from "../../common/services/api";
 
 const SUBJECT_COLORS = [
@@ -25,13 +25,21 @@ const getColor = (name) => {
 export default function Subjects() {
   const [view, setView] = useState("table");
   const [showUpload, setShowUpload] = useState(false);
-  
-  // New States for Assign Teacher
+
+  // Assign Teacher states
   const [showAssign, setShowAssign] = useState(false);
   const [teachers, setTeachers] = useState([]);
-  const [assigningSubject, setAssigningSubject] = useState(null); // stores {id, name}
+  const [assigningSubject, setAssigningSubject] = useState(null);
   const [selectedTeacherId, setSelectedTeacherId] = useState("");
   const [assignLoading, setAssignLoading] = useState(false);
+
+  // ── NEW: Create Single Subject states ──────────────────────────
+  const [showCreate, setShowCreate] = useState(false);
+  const [createSubjectName, setCreateSubjectName] = useState("");
+  const [createTeacherId, setCreateTeacherId] = useState("");
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createError, setCreateError] = useState("");
+  // ──────────────────────────────────────────────────────────────
 
   const [file, setFile] = useState(null);
   const [classrooms, setClassrooms] = useState([]);
@@ -99,12 +107,12 @@ export default function Subjects() {
       await API.patch(`/subject/assign-teacher`, null, {
         params: {
           subjectId: assigningSubject.id,
-          teacherId: selectedTeacherId
-        }
+          teacherId: selectedTeacherId,
+        },
       });
       alert("Teacher Assigned Successfully");
       setShowAssign(false);
-      fetchSubjects(); // Refresh list to show new teacher name
+      fetchSubjects();
     } catch (err) {
       console.error("Assignment failed", err);
       alert("Failed to assign teacher");
@@ -112,6 +120,46 @@ export default function Subjects() {
       setAssignLoading(false);
     }
   };
+
+  // ── NEW: open create modal ─────────────────────────────────────
+  const openCreateModal = () => {
+    // Must have a specific classroom selected (not ALL)
+    if (selectedClassroom === "ALL") {
+      alert("Please select a specific classroom before adding a subject.");
+      return;
+    }
+    setCreateSubjectName("");
+    setCreateTeacherId("");
+    setCreateError("");
+    fetchTeachers();
+    setShowCreate(true);
+  };
+
+  // ── NEW: submit create single subject ─────────────────────────
+  const handleCreateSubject = async () => {
+    const trimmed = createSubjectName.trim();
+    if (!trimmed) {
+      setCreateError("Subject name is required.");
+      return;
+    }
+    setCreateError("");
+    setCreateLoading(true);
+    try {
+      await API.post(`/school-admin/${selectedClassroom}/subjects`, {
+        subjectName: trimmed,
+        teacherId: createTeacherId ? Number(createTeacherId) : null,
+      });
+      alert("Subject created successfully!");
+      setShowCreate(false);
+      fetchSubjects();  
+    } catch (err) {
+      const msg = err?.response?.data?.message || "Failed to create subject.";
+      setCreateError(msg);
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+  // ──────────────────────────────────────────────────────────────
 
   const handleUpload = async () => {
     if (!file) return alert("Select file first");
@@ -131,16 +179,16 @@ export default function Subjects() {
     }
   };
 
-  const selectedLabel = selectedClassroom === "ALL"
-    ? "All Classes"
-    : (() => {
-        const c = classrooms.find((x) => String(x.id) === String(selectedClassroom));
-        return c ? `${c.grade} · ${c.section}` : "";
-      })();
+  const selectedLabel =
+    selectedClassroom === "ALL"
+      ? "All Classes"
+      : (() => {
+          const c = classrooms.find((x) => String(x.id) === String(selectedClassroom));
+          return c ? `${c.grade} · ${c.section}` : "";
+        })();
 
   return (
     <>
-     
       <style>{`
          @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 
@@ -159,7 +207,6 @@ export default function Subjects() {
           overflow-x: auto;
         }
 
-        /* HEADER */
         .sub-header {
           display: flex;
           justify-content: space-between;
@@ -211,7 +258,6 @@ export default function Subjects() {
           box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
         }
 
-        /* VIEW TOGGLE */
         .view-tabs {
           display: flex;
           background: #fff;
@@ -239,7 +285,6 @@ export default function Subjects() {
           color: #fff;
         }
 
-        /* BUTTONS */
         .btn-primary {
           display: flex;
           align-items: center;
@@ -259,7 +304,26 @@ export default function Subjects() {
         .btn-primary:hover { background: #1E293B; transform: translateY(-1px); }
         .btn-primary:active { transform: translateY(0); }
 
-        /* FILTER BADGE */
+        /* ── NEW: indigo outlined button for single-add ── */
+        .btn-secondary {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          background: #EEF2FF;
+          color: #4338CA;
+          border: 1.5px solid #C7D2FE;
+          padding: 9px 18px;
+          border-radius: 10px;
+          font-size: 13.5px;
+          font-weight: 600;
+          font-family: 'DM Sans', sans-serif;
+          cursor: pointer;
+          transition: background 0.15s, transform 0.1s;
+        }
+
+        .btn-secondary:hover { background: #E0E7FF; transform: translateY(-1px); }
+        .btn-secondary:active { transform: translateY(0); }
+
         .filter-badge {
           display: inline-flex;
           align-items: center;
@@ -275,7 +339,6 @@ export default function Subjects() {
           font-family: 'DM Mono', monospace;
         }
 
-        /* CARD */
         .sub-card {
           background: #fff;
           border-radius: 16px;
@@ -284,7 +347,6 @@ export default function Subjects() {
           box-shadow: 0 1px 4px rgba(15,23,42,0.04);
         }
 
-        /* TABLE */
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
 
         thead {
@@ -340,10 +402,7 @@ export default function Subjects() {
           display: inline-block;
         }
 
-        .teacher-cell {
-          font-size: 13px;
-          color: #1E293B;
-        }
+        .teacher-cell { font-size: 13px; color: #1E293B; }
 
         .teacher-none {
           font-size: 12px;
@@ -400,7 +459,6 @@ export default function Subjects() {
         .act-red { background:#FFF1F2; border-color:#FECDD3; color:#BE123C; }
         .act-red:hover { background:#FFE4E6; }
 
-        /* GRID */
         .sub-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -424,29 +482,12 @@ export default function Subjects() {
           box-shadow: 0 6px 20px rgba(0,0,0,0.07);
         }
 
-        .grid-subject-name {
-          font-size: 15px;
-          font-weight: 700;
-        }
+        .grid-subject-name { font-size: 15px; font-weight: 700; }
 
         .grid-meta {
           font-size: 12px;
           color: #64748B;
           font-family: 'DM Mono', monospace;
-        }
-
-        .grid-actions {
-          display: flex;
-          gap: 8px;
-          margin-top: 4px;
-        }
-
-        /* LOADING / EMPTY */
-        .state-row td {
-          padding: 56px;
-          text-align: center;
-          color: #94A3B8;
-          font-size: 14px;
         }
 
         .spinner {
@@ -462,7 +503,6 @@ export default function Subjects() {
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* MODAL */
         .modal-overlay {
           position: fixed;
           inset: 0;
@@ -518,7 +558,7 @@ export default function Subjects() {
           padding-right: 32px;
         }
 
-        .modal-body { display: flex; flex-direction: column; gap: 12px; }
+        .modal-body { display: flex; flex-direction: column; gap: 14px; }
 
         .modal-label {
           font-size: 12px;
@@ -526,15 +566,62 @@ export default function Subjects() {
           color: #64748B;
           text-transform: uppercase;
           letter-spacing: 0.4px;
-          margin-bottom: 4px;
+          margin-bottom: 5px;
+          display: block;
         }
 
         .field-group { display: flex; flex-direction: column; gap: 4px; }
 
-        .modal-hint {
-          font-size: 11.5px;
+        /* ── shared input/select style used inside modals ── */
+        .modal-input, .modal-select {
+          width: 100%;
+          padding: 10px 14px;
+          border: 1.5px solid #E2E8F0;
+          border-radius: 10px;
+          font-size: 13.5px;
+          font-family: 'DM Sans', sans-serif;
+          color: #1E293B;
+          background: #fff;
+          transition: border-color 0.15s, box-shadow 0.15s;
+          outline: none;
+        }
+
+        .modal-input:focus, .modal-select:focus {
+          border-color: #6366F1;
+          box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+        }
+
+        .modal-input.error { border-color: #F43F5E; }
+
+        .error-msg {
+          font-size: 12px;
+          color: #BE123C;
+          margin-top: 3px;
+          font-weight: 500;
+        }
+
+        .optional-tag {
+          font-size: 11px;
           color: #94A3B8;
-          margin-top: 2px;
+          font-weight: 400;
+          text-transform: none;
+          letter-spacing: 0;
+          margin-left: 4px;
+        }
+
+        /* classroom info pill inside create modal */
+        .classroom-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: #F8F9FC;
+          border: 1.5px solid #E2E8F0;
+          border-radius: 8px;
+          padding: 6px 12px;
+          font-size: 13px;
+          font-weight: 600;
+          color: #334155;
+          font-family: 'DM Mono', monospace;
         }
 
         .upload-area {
@@ -551,9 +638,7 @@ export default function Subjects() {
 
         .upload-icon { font-size: 28px; margin-bottom: 8px; }
 
-        .upload-area input[type="file"] {
-          display: none;
-        }
+        .upload-area input[type="file"] { display: none; }
 
         .upload-area label {
           cursor: pointer;
@@ -561,47 +646,6 @@ export default function Subjects() {
           font-weight: 600;
           color: #4338CA;
         }
-
-        .upload-area .upload-hint {
-          font-size: 12px;
-          color: #94A3B8;
-          margin-top: 4px;
-        }
-
-        .file-selected {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: #F0FDF4;
-          border: 1.5px solid #BBF7D0;
-          border-radius: 8px;
-          padding: 8px 12px;
-          font-size: 13px;
-          color: #15803D;
-          font-weight: 500;
-          font-family: 'DM Mono', monospace;
-          margin-top: 4px;
-        }
-
-        .modal-btn {
-          width: 100%;
-          padding: 11px;
-          border-radius: 10px;
-          font-size: 14px;
-          font-weight: 700;
-          font-family: 'DM Sans', sans-serif;
-          cursor: pointer;
-          border: none;
-          margin-top: 4px;
-          transition: all 0.15s;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-        }
-
-        .modal-btn-green { background: #15803D; color: #fff; }
-        .modal-btn-green:hover { background: #166534; }
 
         .modal-footer-row {
           display: flex;
@@ -645,7 +689,27 @@ export default function Subjects() {
 
         .modal-btn-upload:hover { background: #166534; }
 
-        /* GRID EMPTY */
+        .modal-btn-indigo {
+          flex: 2;
+          padding: 10px;
+          border-radius: 10px;
+          font-size: 13.5px;
+          font-weight: 700;
+          font-family: 'DM Sans', sans-serif;
+          cursor: pointer;
+          background: #6366F1;
+          color: #fff;
+          border: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          transition: background 0.15s;
+        }
+
+        .modal-btn-indigo:hover { background: #4F46E5; }
+        .modal-btn-indigo:disabled { opacity: 0.6; cursor: not-allowed; }
+
         .grid-empty {
           grid-column: 1 / -1;
           padding: 64px;
@@ -653,9 +717,7 @@ export default function Subjects() {
           color: #94A3B8;
           font-size: 14px;
         }
-
-        .grid-empty-icon { font-size: 36px; margin-bottom: 10px; }
-     `}</style>
+      `}</style>
 
       <div className="sub-page">
         <SchoolAdminSidebar />
@@ -686,8 +748,14 @@ export default function Subjects() {
                 <button className={`view-tab ${view === "grid" ? "active" : ""}`} onClick={() => setView("grid")}><LayoutGrid size={16} /></button>
               </div>
 
+              {/* ── NEW: Add Single Subject button ── */}
+              <button className="btn-secondary" onClick={openCreateModal}>
+                <BookPlus size={15} /> Add Subject
+              </button>
+
+              {/* Bulk upload (existing) */}
               <button className="btn-primary" onClick={() => setShowUpload(true)}>
-                <Plus size={15} /> Add Subject
+                <Upload size={15} /> Bulk Upload
               </button>
             </div>
           </div>
@@ -698,7 +766,7 @@ export default function Subjects() {
 
           <div className="sub-card">
             {loading ? (
-              <div style={{padding: 40, textAlign:'center'}}><span className="spinner" /> Loading...</div>
+              <div style={{ padding: 40, textAlign: "center" }}><span className="spinner" /> Loading...</div>
             ) : view === "table" ? (
               <table>
                 <thead>
@@ -722,8 +790,8 @@ export default function Subjects() {
                         </td>
                         <td><span className="class-mono">{sub.section}</span></td>
                         <td>
-                          {sub.teacherName 
-                            ? <span className="teacher-cell">{sub.teacherName}</span> 
+                          {sub.teacherName
+                            ? <span className="teacher-cell">{sub.teacherName}</span>
                             : <span className="teacher-none">Not Assigned</span>}
                         </td>
                         <td>
@@ -734,7 +802,7 @@ export default function Subjects() {
                         <td>
                           <div className="action-btns">
                             <button className="act-btn act-green" onClick={() => openAssignModal(sub)}>
-                              <UserPlus size={13} style={{marginRight:4}}/> Assign Teacher
+                              <UserPlus size={13} style={{ marginRight: 4 }} /> Assign Teacher
                             </button>
                             <button className="act-btn act-blue">Edit</button>
                           </div>
@@ -753,7 +821,7 @@ export default function Subjects() {
                       <div className="grid-subject-name" style={{ color: color.text }}>{sub.subjectName}</div>
                       <div className="grid-meta">🏫 {sub.section}</div>
                       <div className="grid-meta">👩‍🏫 {sub.teacherName || "Not Assigned"}</div>
-                      <button className="act-btn act-green" style={{marginTop:8}} onClick={() => openAssignModal(sub)}>Assign</button>
+                      <button className="act-btn act-green" style={{ marginTop: 8 }} onClick={() => openAssignModal(sub)}>Assign</button>
                     </div>
                   );
                 })}
@@ -763,7 +831,76 @@ export default function Subjects() {
         </div>
       </div>
 
-      {/* ASSIGN TEACHER MODAL */}
+      {/* ══════════════════════════════════════════════════════
+          NEW: CREATE SINGLE SUBJECT MODAL
+      ══════════════════════════════════════════════════════ */}
+      {showCreate && (
+        <div className="modal-overlay">
+          <div className="modal-box">
+            <button className="modal-close" onClick={() => setShowCreate(false)}><X size={16} /></button>
+            <div className="modal-title">📖 Add New Subject</div>
+            <div className="modal-body">
+
+              {/* Classroom context */}
+              <div className="field-group">
+                <span className="modal-label">Classroom</span>
+                <div className="classroom-pill">
+                  🏫 {selectedLabel}
+                </div>
+              </div>
+
+              {/* Subject Name */}
+              <div className="field-group">
+                <span className="modal-label">Subject Name</span>
+                <input
+                  className={`modal-input${createError ? " error" : ""}`}
+                  type="text"
+                  placeholder="e.g. Mathematics, Physics…"
+                  value={createSubjectName}
+                  onChange={(e) => { setCreateSubjectName(e.target.value); setCreateError(""); }}
+                  onKeyDown={(e) => e.key === "Enter" && handleCreateSubject()}
+                  autoFocus
+                />
+                {createError && <div className="error-msg">⚠ {createError}</div>}
+              </div>
+
+              {/* Teacher (optional) */}
+              <div className="field-group">
+                <span className="modal-label">
+                  Assign Teacher
+                  <span className="optional-tag">(optional)</span>
+                </span>
+                <select
+                  className="modal-select"
+                  value={createTeacherId}
+                  onChange={(e) => setCreateTeacherId(e.target.value)}
+                >
+                  <option value="">— Select a teacher (optional) —</option>
+                  {teachers.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.fullName} — {t.specilization_Subject}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="modal-footer-row">
+                <button className="modal-btn-cancel" onClick={() => setShowCreate(false)}>Cancel</button>
+                <button
+                  className="modal-btn-indigo"
+                  onClick={handleCreateSubject}
+                  disabled={createLoading}
+                >
+                  {createLoading ? <span className="spinner" /> : <Check size={15} />}
+                  Create Subject
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ASSIGN TEACHER MODAL (unchanged) */}
       {showAssign && (
         <div className="modal-overlay">
           <div className="modal-box">
@@ -772,32 +909,32 @@ export default function Subjects() {
             <div className="modal-body">
               <div className="field-group">
                 <div className="modal-label">Subject</div>
-                <div style={{fontWeight: 700, marginBottom: 15, color: '#1E293B'}}>
-                    {assigningSubject?.subjectName} ({assigningSubject?.section})
+                <div style={{ fontWeight: 700, marginBottom: 15, color: "#1E293B" }}>
+                  {assigningSubject?.subjectName} ({assigningSubject?.section})
                 </div>
-                
+
                 <div className="modal-label">Select Teacher</div>
-                <select 
-                    className="teacher-select"
-                    value={selectedTeacherId}
-                    onChange={(e) => setSelectedTeacherId(e.target.value)}
+                <select
+                  className="modal-select"
+                  value={selectedTeacherId}
+                  onChange={(e) => setSelectedTeacherId(e.target.value)}
                 >
-                    <option value="">Select a Teacher</option>
-                    {teachers.map(t => (
-                        <option key={t.id} value={t.id}>
-                            {t.fullName} — {t.specilization_Subject}
-                        </option>
-                    ))}
+                  <option value="">Select a Teacher</option>
+                  {teachers.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.fullName} — {t.specilization_Subject}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               <div className="modal-footer-row">
                 <button className="modal-btn-cancel" onClick={() => setShowAssign(false)}>Cancel</button>
-                <button 
-                    className="modal-btn-upload" 
-                    style={{backgroundColor: '#6366F1'}} 
-                    onClick={handleAssignTeacher}
-                    disabled={assignLoading}
+                <button
+                  className="modal-btn-upload"
+                  style={{ backgroundColor: "#6366F1" }}
+                  onClick={handleAssignTeacher}
+                  disabled={assignLoading}
                 >
                   {assignLoading ? <span className="spinner" /> : <Check size={15} />} Confirm Assignment
                 </button>
@@ -807,7 +944,7 @@ export default function Subjects() {
         </div>
       )}
 
-      {/* UPLOAD MODAL (Existing) */}
+      {/* BULK UPLOAD MODAL (unchanged) */}
       {showUpload && (
         <div className="modal-overlay">
           <div className="modal-box">
