@@ -167,7 +167,7 @@ export default function Students() {
               </button>
               <button disabled={page >= totalPages - 1} onClick={() => setPage(prev => prev + 1)} className="p-2 border rounded-lg hover:bg-slate-50 disabled:opacity-30 transition-all text-slate-600">
                 <ChevronRight size={20} />
-              </button>
+              </button> 
             </div>
           </div>
         </motion.div>

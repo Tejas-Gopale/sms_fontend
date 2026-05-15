@@ -48,7 +48,7 @@ export default function StudentProfileModal({ student, classrooms, onClose, onRe
     setLoading(true);
     try {
       // Assuming your Spring Boot backend has a PUT endpoint for updates
-      await API.put(`/school-admin/update-student/${student.id}`, formData);
+      await API.patch(`/school-admin/update-student/${student.id}`, formData);
       alert("Student Information Updated ✅");
       setIsEditing(false);
       onRefresh(); // Re-fetch the table data in the parent component

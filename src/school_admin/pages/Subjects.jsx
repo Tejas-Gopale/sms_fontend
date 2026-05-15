@@ -738,7 +738,7 @@ export default function Subjects() {
                 <option value="ALL">All Classes</option>
                 {classrooms.map((cls) => (
                   <option key={cls.id} value={cls.id}>
-                    Class {cls.grade}{cls.section ? ` – ${cls.section}` : ""}
+                    {cls.grade}{cls.section ? ` – ${cls.section}` : ""}
                   </option>
                 ))}
               </select>

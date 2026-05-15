@@ -64,6 +64,7 @@ export default function SchoolAdminSidebar() {
         { name: "Timetable",    icon: CalendarDays, path: "/school-admin/timetable" },
         { name: "Exams & Results",icon: FileText,   path: "/school-admin/exams" },
         { name: "Library",      icon: Library,      path: "/school-admin/library" },
+        
       ],
     },
     {

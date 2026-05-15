@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import SchoolAdminSidebar from "../components/SchoolAdminSidebar";
 import API from "../../common/services/api";
 import { getUserData } from "../../common/utils/tokenStorage";
+import TeacherProfileModal from "../components/TeacherProfileModal";
 import {
   Search, Plus, ArrowUpDown, Upload, X,
   FileText, ChevronLeft, ChevronRight, User,
@@ -43,8 +45,7 @@ const EMPTY_FORM = {
 };
 
 export default function Teachers() {
-  const [teachers, setTeachers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   // PAGINATION
   const [page, setPage] = useState(0);
@@ -57,47 +58,35 @@ export default function Teachers() {
 
   // SEARCH
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  // BULK UPLOAD MODAL (untouched)
+  // MODALS
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
-
-  // ── ADD TEACHER MODAL ──────────────────────────────────────────────────────
   const [showAddModal, setShowAddModal] = useState(false);
+  const [viewTeacher, setViewTeacher] = useState(null); // 👈 Teacher profile modal
+
+  // ADD TEACHER FORM
   const [form, setForm] = useState(EMPTY_FORM);
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
   const [addSuccess, setAddSuccess] = useState(false);
 
-  // ── debounce search ────────────────────────────────────────────────────────
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-      setPage(0);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [search]);
-
-  useEffect(() => {
-    fetchTeachers();
-  }, [page, sortBy, sortDir, debouncedSearch]);
-
-  const fetchTeachers = async () => {
-    setLoading(true);
-    try {
+  // ── FETCH TEACHERS ────────────────────────────────────────────────────────
+  const { data: teacherData, isLoading: loading, refetch: fetchTeachers } = useQuery({
+    queryKey: ["teachers", page, sortBy, sortDir, search],
+    queryFn: async () => {
       const res = await API.get("/school-admin/getTeacherDetails", {
-        params: { page, size: itemsPerPage, sortBy, sortDir, search: debouncedSearch },
+        params: { page, size: itemsPerPage, sortBy, sortDir, search },
       });
-      setTeachers(res.data.content || []);
       setTotalPages(res.data.totalPages || 1);
-    } catch (err) {
-      console.error("Error fetching teachers:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return res.data.content || [];
+    },
+    keepPreviousData: true,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const teachers = teacherData || [];
 
   const handleSort = (field) => {
     if (sortBy === field) {
@@ -108,7 +97,7 @@ export default function Teachers() {
     }
   };
 
-  // ── bulk upload (ORIGINAL — untouched) ────────────────────────────────────
+  // ── BULK UPLOAD ───────────────────────────────────────────────────────────
   const handleUpload = async () => {
     if (!selectedFile) return;
     try {
@@ -122,13 +111,13 @@ export default function Teachers() {
       setSelectedFile(null);
       fetchTeachers();
     } catch (err) {
-      alert("Upload failed ❌", err);
+      alert("Upload failed ❌");
     } finally {
       setUploading(false);
     }
   };
 
-  // ── ADD TEACHER handlers ───────────────────────────────────────────────────
+  // ── ADD TEACHER ───────────────────────────────────────────────────────────
   const handleFormChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -143,25 +132,21 @@ export default function Teachers() {
     e.preventDefault();
     setAddError("");
     setAdding(true);
-
     try {
       const userData = getUserData();
       const schoolId = userData?.schoolId || localStorage.getItem("schoolId");
-
       const payload = {
         ...form,
         schoolId: schoolId ? Number(schoolId) : undefined,
         salary: form.salary ? Number(form.salary) : undefined,
         joiningDate: form.joiningDate || undefined,
       };
-
       await API.post("/school-admin/create-teachers", payload);
-
       setAddSuccess(true);
       setTimeout(() => {
         setShowAddModal(false);
         setAddSuccess(false);
-        fetchTeachers(); // refresh list
+        fetchTeachers();
       }, 1400);
     } catch (err) {
       const msg = err?.response?.data;
@@ -171,7 +156,7 @@ export default function Teachers() {
     }
   };
 
-  // ────────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="flex min-h-screen bg-[#F8FAFC]">
       <SchoolAdminSidebar />
@@ -191,15 +176,12 @@ export default function Teachers() {
           </div>
 
           <div className="flex gap-3">
-            {/* ── Bulk Import (ORIGINAL) ── */}
             <button
               onClick={() => setShowUploadModal(true)}
               className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-all shadow-sm font-medium"
             >
               <Upload size={18} /> Bulk Import
             </button>
-
-            {/* ── Add Teacher (NEW) ── */}
             <button
               onClick={openAddModal}
               className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100 font-medium"
@@ -223,12 +205,12 @@ export default function Teachers() {
                 type="text"
                 placeholder="Search by name, email or subject..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => { setSearch(e.target.value); setPage(0); }}
                 className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
               />
             </div>
             <div className="text-sm text-slate-500 font-medium">
-              Showing {teachers.length} teachers
+              Showing <span className="text-indigo-600 font-bold">{teachers.length}</span> teachers
             </div>
           </div>
 
@@ -249,20 +231,23 @@ export default function Teachers() {
                       </div>
                     </th>
                   ))}
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Action
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {loading ? (
                   [...Array(5)].map((_, i) => (
                     <tr key={i} className="animate-pulse">
-                      <td colSpan="4" className="p-6">
+                      <td colSpan="5" className="p-6">
                         <div className="h-4 bg-slate-100 rounded w-full" />
                       </td>
                     </tr>
                   ))
                 ) : teachers.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="py-20 text-center">
+                    <td colSpan="5" className="py-20 text-center">
                       <div className="flex flex-col items-center opacity-40">
                         <Search size={48} className="mb-2" />
                         <p className="text-lg font-medium">No results found</p>
@@ -271,9 +256,18 @@ export default function Teachers() {
                   </tr>
                 ) : (
                   teachers.map((t) => (
-                    <tr key={t.id} className="hover:bg-slate-50/80 transition-colors group">
+                    <tr
+                      key={t.id}
+                      className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
+                      onClick={() => setViewTeacher(t)} // 👈 row click se modal open
+                    >
                       <td className="px-6 py-4">
-                        <div className="font-semibold text-slate-700">{t.userName || "-"}</div>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs font-bold">
+                            {(t.userName || t.fullName || "T").charAt(0).toUpperCase()}
+                          </div>
+                          <span className="font-semibold text-slate-700">{t.userName || "-"}</span>
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-slate-600">{t.email || "-"}</td>
                       <td className="px-6 py-4 text-slate-600">
@@ -285,6 +279,14 @@ export default function Teachers() {
                         <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold ring-1 ring-inset ring-indigo-700/10">
                           {t.subjectSpecialization || "General"}
                         </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setViewTeacher(t); }}
+                          className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-all"
+                        >
+                          View Profile
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -333,9 +335,21 @@ export default function Teachers() {
         </motion.div>
       </main>
 
-      {/* ═══════════════════════════════════════════════════════════════════════
-          BULK IMPORT MODAL — ORIGINAL, UNTOUCHED
-      ═══════════════════════════════════════════════════════════════════════ */}
+      {/* ── TEACHER PROFILE MODAL ─────────────────────────────────────────── */}
+      <AnimatePresence>
+        {viewTeacher && (
+          <TeacherProfileModal
+            teacher={viewTeacher}
+            onClose={() => setViewTeacher(null)}
+            onRefresh={() => {
+              queryClient.invalidateQueries(["teachers"]);
+              fetchTeachers();
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── BULK IMPORT MODAL ─────────────────────────────────────────────── */}
       <AnimatePresence>
         {showUploadModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -383,27 +397,21 @@ export default function Teachers() {
         )}
       </AnimatePresence>
 
-      {/* ═══════════════════════════════════════════════════════════════════════
-          ADD TEACHER MODAL — NEW
-      ═══════════════════════════════════════════════════════════════════════ */}
+      {/* ── ADD TEACHER MODAL ─────────────────────────────────────────────── */}
       <AnimatePresence>
         {showAddModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* backdrop */}
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setShowAddModal(false)}
               className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
             />
-
-            {/* modal box */}
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               className="bg-white rounded-2xl w-full max-w-lg shadow-2xl relative z-10 overflow-hidden"
             >
-              {/* modal header */}
               <div className="flex items-center justify-between px-7 py-5 border-b border-slate-100">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center">
@@ -419,37 +427,32 @@ export default function Teachers() {
                 </button>
               </div>
 
-              {/* form */}
               <form onSubmit={handleAddTeacher} className="px-7 py-5 max-h-[70vh] overflow-y-auto">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2">
-                    <Field label="Full Name"  name="fullName"  value={form.fullName}  onChange={handleFormChange} required />
+                    <Field label="Full Name" name="fullName" value={form.fullName} onChange={handleFormChange} required />
                   </div>
-                  <Field label="Email"       name="email"      type="email"    value={form.email}       onChange={handleFormChange} required />
-                  <Field label="Phone"       name="phoneNumber" type="tel"     value={form.phoneNumber} onChange={handleFormChange} required />
-                  <Field label="Password"    name="password"   type="password" value={form.password}    onChange={handleFormChange} required placeholder="Min 6 characters" />
-                  <Field label="Employee ID" name="employeeId"                 value={form.employeeId}  onChange={handleFormChange} />
-                  <Field label="Qualification" name="qualification"            value={form.qualification} onChange={handleFormChange} placeholder="e.g. B.Ed, M.Sc" />
+                  <Field label="Email" name="email" type="email" value={form.email} onChange={handleFormChange} required />
+                  <Field label="Phone" name="phoneNumber" type="tel" value={form.phoneNumber} onChange={handleFormChange} required />
+                  <Field label="Password" name="password" type="password" value={form.password} onChange={handleFormChange} required placeholder="Min 6 characters" />
+                  <Field label="Employee ID" name="employeeId" value={form.employeeId} onChange={handleFormChange} />
+                  <Field label="Qualification" name="qualification" value={form.qualification} onChange={handleFormChange} placeholder="e.g. B.Ed, M.Sc" />
                   <Field label="Subject Specialization" name="subjectSpecialization" value={form.subjectSpecialization} onChange={handleFormChange} placeholder="e.g. Mathematics" />
-                  <Field label="Joining Date" name="joiningDate" type="date"   value={form.joiningDate} onChange={handleFormChange} />
-                  <Field label="Salary (₹)"  name="salary"    type="number"   value={form.salary}      onChange={handleFormChange} placeholder="e.g. 35000" />
+                  <Field label="Joining Date" name="joiningDate" type="date" value={form.joiningDate} onChange={handleFormChange} />
+                  <Field label="Salary (₹)" name="salary" type="number" value={form.salary} onChange={handleFormChange} placeholder="e.g. 35000" />
                 </div>
 
-                {/* error */}
                 {addError && (
                   <div className="mt-4 px-4 py-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-sm">
                     {addError}
                   </div>
                 )}
-
-                {/* success */}
                 {addSuccess && (
                   <div className="mt-4 px-4 py-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-sm font-medium">
                     ✅ Teacher added successfully!
                   </div>
                 )}
 
-                {/* actions */}
                 <div className="flex gap-3 mt-6">
                   <button
                     type="button"
@@ -461,12 +464,10 @@ export default function Teachers() {
                   <button
                     type="submit"
                     disabled={adding || addSuccess}
-                    className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold
-                               shadow-md shadow-indigo-200 hover:bg-indigo-700
-                               disabled:opacity-60 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
+                    className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold shadow-md shadow-indigo-200 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
                   >
                     {adding
-                      ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>Adding…</>
+                      ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Adding…</>
                       : "Add Teacher"}
                   </button>
                 </div>
