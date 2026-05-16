@@ -115,7 +115,7 @@ function SlotEditor({ slot, subjects, onSave, onClose }) {
               <div style={styles.field}>
                 <label style={styles.label}>Subject</label>
                 <select
-                  style={styles.select}
+                  style={styles.select }
                   value={subjectId}
                   onChange={(e) => setSubjectId(e.target.value)}
                 >

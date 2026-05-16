@@ -2,7 +2,7 @@ importScripts('https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js'
 importScripts('https://www.gstatic.com/firebasejs/10.0.0/firebase-messaging-compat.js');
 
 firebase.initializeApp({
-  apiKey:            "#API KEY#",
+  apiKey:            "AIzaSyA2-IW_ouVfJyHiLXoNK9TV3RLOHbgh-BM",
   authDomain:        "sas-schoolmanagement-software.firebaseapp.com",
   projectId:         "sas-schoolmanagement-software",
   storageBucket:     "sas-schoolmanagement-software.firebasestorage.app",

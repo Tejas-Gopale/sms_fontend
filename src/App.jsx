@@ -7,6 +7,7 @@ import SMS_Schools from "./super_admin/pages/SMS_Schools";
 import SMS_Revenue from "./super_admin/pages/SMS_Revenue";
 import SMS_Subscriptions from "./super_admin/pages/SMS_Subscription";
 import SMS_Settings from "./super_admin/pages/SMS_Settings";
+import { useFCM } from './common/hooks/useFCM';
 
 // School_Admin Importing components
 import SchoolAdminDashboard from "./school_admin/pages/School_Admin_Dashboard";
@@ -65,6 +66,8 @@ function TimetableCreatorPage() {
 }
 
 function App() {
+    useFCM(); // ← bas ye ek line add karo
+
   return (
     <BrowserRouter>
       <Routes>
