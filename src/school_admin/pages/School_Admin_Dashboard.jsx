@@ -19,6 +19,7 @@ const DEFAULT_PAYMENT_CONFIG = {
   webhookSecret: "",
   isTestMode: true,
   isActive: true,
+  upiId: "",
 };
 
 // ─── API Functions (component ke bahar — har render pe recreate nahi hoga) ───
@@ -74,9 +75,13 @@ function PaymentConfigModal({ onClose, schoolId, existingConfig }) {
   const queryClient = useQueryClient();
 
   // ✅ Modal ka apna local state — parent pollute nahi hota
+  // apiSecret & webhookSecret ko blank rakhte hain — server masked values bhejta hai (••••••••)
+  // Admin sirf tab fill kare jab change karna ho
   const [config, setConfig] = useState(() => ({
     ...DEFAULT_PAYMENT_CONFIG,
     ...existingConfig,
+    apiSecret:     "",   // never prefill — server returns masked value
+    webhookSecret: "",   // never prefill — server returns masked value
   }));
   const [showSecret, setShowSecret] = useState(false);
 
@@ -100,11 +105,15 @@ function PaymentConfigModal({ onClose, schoolId, existingConfig }) {
   }, []);
 
   const handleSubmit = () => {
-    if (!config.apiKey.trim() || !config.apiSecret.trim()) {
-      toast.error("Key ID and Key Secret are required");
+    if (!config.apiKey.trim()) {
+      toast.error("Key ID is required");
       return;
     }
-    mutation.mutate({ schoolId, config });
+    // Build payload — only include secrets if admin actually typed them
+    const payload = { ...config };
+    if (!payload.apiSecret.trim())     delete payload.apiSecret;
+    if (!payload.webhookSecret.trim()) delete payload.webhookSecret;
+    mutation.mutate({ schoolId, config: payload });
   };
 
   // ✅ ESC key se modal close ho
@@ -180,6 +189,25 @@ function PaymentConfigModal({ onClose, schoolId, existingConfig }) {
               onChange={handleChange("webhookSecret")}
               autoComplete="off"
             />
+          </div>
+
+          {/* UPI ID */}
+          <div>
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              UPI ID{" "}
+              <span className="text-gray-400 font-normal">(for parent QR payment)</span>
+            </label>
+            <input
+              type="text"
+              className="w-full border border-gray-300 p-2 rounded-lg mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="school@upi  or  yourname@okaxis"
+              value={config.upiId}
+              onChange={handleChange("upiId")}
+              autoComplete="off"
+            />
+            <p className="text-xs text-gray-400 mt-1">
+              Parents will see a scannable QR code for this UPI ID on the fees page.
+            </p>
           </div>
 
           {/* Test Mode Toggle */}
