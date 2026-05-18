@@ -16,7 +16,9 @@ createRoot(document.getElementById('root')).render(
     <AuthProvider>
       {/* ✅ 3. Client prop pass karna mat bhulna */}
       <QueryClientProvider client={queryClient}>
+        
         <App />
+       
       </QueryClientProvider>
     </AuthProvider>
   </StrictMode>

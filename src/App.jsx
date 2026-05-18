@@ -34,7 +34,7 @@ import TimetableCreator from "./school_admin/components/TimetableCreator";
 
 // Parent Importing components
 import ParentDashboard from "./parents/pages/Parents_Dashboard";
-import ParentSettings from "./parents/pages/ParentSettings";
+// import ParentSettings from "./parents/pages/ParentSettings";
 import ParentNotifications from "./parents/pages/ParentNotifications";
 import ParentRemarks from "./parents/pages/ParentRemarks";
 import ParentFees from "./parents/pages/Fees";
@@ -127,16 +127,16 @@ function App() {
 
         {/* Parent Routes */}
         <Route path="/parents/dashboard" element={<ParentDashboard />} />
-        <Route path="/parent/attendance" element={<ParentAttendance />} />
+         <Route path="/parent/attendance" element={<ParentAttendance />} />
         <Route path="/parent/homework" element={<ParentHomework />} />
         <Route path="/parent/results" element={<ParentResults />} />
         <Route path="/parent/bus-tracking" element={<ParentBusTracking />} />
         <Route path="/parent/fees" element={<ParentFees />} />
-        <Route path="/parent/remarks" element={<ParentRemarks />} />
-        <Route path="/parent/notifications" element={<ParentNotifications />} />
-        <Route path="/parent/settings" element={<ParentSettings />} />
-        <Route path="/parent/timetable" element={<ParentTimeTable />} />
-        <Route path="/parent/profile-settings" element={<ProfilePage />} />
+       <Route path="/parent/remarks" element={<ParentRemarks />} />
+       <Route path="/parent/notifications" element={<ParentNotifications />} />
+        {/* <Route path="/parent/settings" element={<ParentSettings />} /> */}
+         <Route path="/parent/timetable" element={<ParentTimeTable />} />
+        <Route path="/parent/profile-settings" element={<ProfilePage />} /> 
 
       </Routes>
     </BrowserRouter>
