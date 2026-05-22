@@ -1,7 +1,7 @@
 import axios from "axios";
 import { storeAuthData, clearAuthData } from "../utils/tokenStorage";
 
-const BASE_URL = "http://localhost:8085/api/v1";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8085/api/v1";
 
 export const login = async (email, password) => {
 

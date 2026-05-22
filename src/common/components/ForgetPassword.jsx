@@ -21,8 +21,8 @@ const ForgotPassword = () => {
     setMessage('');
 
     try {
-      // Yahan aapka backend API call aayega
-      // Example: await axios.post('/api/auth/forgot-password', { email });
+      //s Yahan aapka backend API call aayega
+      // Example: await axio.post('/api/auth/forgot-password', { email });
       
       // Simulation for success:
       setMessage("If this email exists, a reset link has been sent to your inbox.");
