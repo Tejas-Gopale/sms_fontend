@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import logo from '../../assects/logo.png';
 import './../styles/Resetpasswordpage.css';
-import API from '../services/Api';
+import API from '../services/api';
 // ─────────────────────────────────────────────────────────────────────────────
 //  Password strength helper
 // ─────────────────────────────────────────────────────────────────────────────
