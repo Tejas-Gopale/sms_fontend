@@ -81,8 +81,8 @@ export default function SchoolAdminSidebar() {
       items: [
         { name: "Visitor Management", icon: UserCircle,   path: "/school-admin/visitors" },
         { name: "Alumni",             icon: Users,        path: "/school-admin/alumni" },
-        { name: "Health & Wellness",  icon: HeartPulse,   path: "/school-admin/health" },
-        { name: "Communication",      icon: MessageSquare,path: "/school-admin/communication" },
+        // { name: "Health & Wellness",  icon: HeartPulse,   path: "/school-admin/health" },
+        // { name: "Communication",      icon: MessageSquare,path: "/school-admin/communication" },
       ],
     },
     {

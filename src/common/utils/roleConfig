@@ -1,0 +1,559 @@
+/**
+ * ROLE CONFIG — Single source of truth for all role-based routing and sidebar menus.
+ * 
+ * Roles from backend Role.java:
+ * SUPER_ADMIN, SCHOOL_OWNER, SCHOOL_ADMIN, PRINCIPAL, VICE_PRINCIPAL,
+ * TEACHER, CLASS_TEACHER, COUNSELOR,
+ * STUDENT, PARENT,
+ * ACCOUNTANT, CASHIER,
+ * TRANSPORT_MANAGER, BUS_DRIVER, BUS_CONDUCTOR,
+ * LIBRARIAN, RECEPTIONIST, NURSE, SECURITY, HOUSEKEEPING, CANTEEN_STAFF,
+ * IT_ADMIN
+ */
+
+export const ROLE_DASHBOARD_ROUTES = {
+  SUPER_ADMIN:       "/super-admin/dashboard",
+  SCHOOL_OWNER:      "/school-owner/dashboard",
+  SCHOOL_ADMIN:      "/school-admin/dashboard",
+  PRINCIPAL:         "/principal/dashboard",
+  VICE_PRINCIPAL:    "/principal/dashboard",        // shares principal UI
+  TEACHER:           "/teachers/dashboard",
+  CLASS_TEACHER:     "/teachers/dashboard",         // shares teacher UI
+  COUNSELOR:         "/counselor/dashboard",
+  STUDENT:           "/student/dashboard",
+  PARENT:            "/parents/dashboard",
+  ACCOUNTANT:        "/accountant/dashboard",
+  CASHIER:           "/cashier/dashboard",
+  TRANSPORT_MANAGER: "/transport-manager/dashboard",
+  BUS_DRIVER:        "/bus-driver/dashboard",
+  BUS_CONDUCTOR:     "/bus-driver/dashboard",       // shares driver UI
+  LIBRARIAN:         "/librarian/dashboard",
+  RECEPTIONIST:      "/receptionist/dashboard",
+  NURSE:             "/nurse/dashboard",
+  SECURITY:          "/security/dashboard",
+  HOUSEKEEPING:      "/staff/dashboard",
+  CANTEEN_STAFF:     "/staff/dashboard",
+  IT_ADMIN:          "/it-admin/dashboard",
+};
+
+/**
+ * Returns the dashboard redirect path for the first role in the roles array.
+ */
+export const getDashboardRoute = (roles = []) => {
+  if (!roles || roles.length === 0) return "/login";
+  const role = roles[0];
+  return ROLE_DASHBOARD_ROUTES[role] || "/login";
+};
+
+/**
+ * Sidebar menu configs per role group.
+ * icon: Lucide icon name string (resolved dynamically in sidebar).
+ */
+export const ROLE_MENU = {
+  SUPER_ADMIN: [
+    {
+      group: "Platform",
+      items: [
+        { name: "Dashboard",    icon: "LayoutDashboard", path: "/super-admin/dashboard" },
+        { name: "Schools",      icon: "School",          path: "/super-admin/schools" },
+        { name: "School Owner", icon: "UserCircle",      path: "/super-admin/school-owner" },
+        { name: "Students",     icon: "Users",           path: "/super-admin/students" },
+        { name: "Teachers",     icon: "GraduationCap",   path: "/super-admin/teachers" },
+      ],
+    },
+    {
+      group: "Finance",
+      items: [
+        { name: "Revenue",       icon: "TrendingUp",  path: "/super-admin/revenue" },
+        { name: "Expenses",      icon: "Receipt",     path: "/super-admin/expenses" },
+        { name: "Subscriptions", icon: "CreditCard",  path: "/super-admin/subscriptions" },
+      ],
+    },
+    {
+      group: "System",
+      items: [
+        { name: "Settings", icon: "Settings", path: "/super-admin/settings" },
+      ],
+    },
+  ],
+
+  SCHOOL_OWNER: [
+    {
+      group: "Overview",
+      items: [
+        { name: "Dashboard",    icon: "LayoutDashboard", path: "/school-owner/dashboard" },
+        { name: "Revenue",      icon: "TrendingUp",      path: "/school-owner/revenue" },
+        { name: "Fee Summary",  icon: "IndianRupee",     path: "/school-owner/fees" },
+        { name: "Enrollment",   icon: "Users",           path: "/school-owner/enrollment" },
+      ],
+    },
+  ],
+
+  SCHOOL_ADMIN: [
+    {
+      group: "Core Management",
+      items: [
+        { name: "Dashboard",             icon: "LayoutDashboard", path: "/school-admin/dashboard" },
+        { name: "Students",              icon: "Users",           path: "/school-admin/students" },
+        { name: "Teachers",              icon: "GraduationCap",   path: "/school-admin/teachers" },
+        { name: "Staff Management",      icon: "UserCheck",       path: "/school-admin/staff" },
+        { name: "Admission Management",  icon: "UserCircle",      path: "/school-admin/admissions" },
+        { name: "Event Management",      icon: "CalendarDays",    path: "/school-admin/events" },
+      ],
+    },
+    {
+      group: "Academic & Learning",
+      items: [
+        { name: "Classes",    icon: "BookOpen",     path: "/school-admin/classes" },
+        { name: "Subjects",   icon: "FileText",     path: "/school-admin/subjects" },
+        { name: "Timetable",  icon: "Clock",        path: "/school-admin/timetable" },
+        { name: "Exams",      icon: "ClipboardList",path: "/school-admin/exams" },
+        { name: "Results",    icon: "BarChart3",    path: "/school-admin/results" },
+      ],
+    },
+    {
+      group: "Finance & Admin",
+      items: [
+        { name: "Fee Management", icon: "IndianRupee", path: "/school-admin/fees" },
+        { name: "Visitors",       icon: "Eye",         path: "/school-admin/visitors" },
+        { name: "Notifications",  icon: "Bell",        path: "/school-admin/notifications" },
+      ],
+    },
+    {
+      group: "Infrastructure",
+      items: [
+        { name: "Library",    icon: "Library",  path: "/school-admin/library" },
+        { name: "Transport",  icon: "Bus",      path: "/school-admin/transport" },
+        { name: "Hostel",     icon: "Home",     path: "/school-admin/hostel" },
+        { name: "Inventory",  icon: "Package",  path: "/school-admin/inventory" },
+        { name: "Health",     icon: "HeartPulse",path: "/school-admin/health" },
+      ],
+    },
+    {
+      group: "Settings",
+      items: [
+        { name: "Profile",   icon: "UserCircle", path: "/school-admin/profile-settings" },
+        { name: "Settings",  icon: "Settings",   path: "/school-admin/settings" },
+      ],
+    },
+  ],
+
+  PRINCIPAL: [
+    {
+      group: "Overview",
+      items: [
+        { name: "Dashboard",     icon: "LayoutDashboard", path: "/principal/dashboard" },
+        { name: "Students",      icon: "Users",           path: "/principal/students" },
+        { name: "Teachers",      icon: "GraduationCap",   path: "/principal/teachers" },
+        { name: "Staff",         icon: "UserCheck",       path: "/principal/staff" },
+      ],
+    },
+    {
+      group: "Academic",
+      items: [
+        { name: "Classes",       icon: "BookOpen",      path: "/principal/classes" },
+        { name: "Timetable",     icon: "Clock",         path: "/principal/timetable" },
+        { name: "Exams",         icon: "ClipboardList", path: "/principal/exams" },
+        { name: "Results",       icon: "BarChart3",     path: "/principal/results" },
+        { name: "Attendance",    icon: "ClipboardCheck",path: "/principal/attendance" },
+      ],
+    },
+    {
+      group: "Communication",
+      items: [
+        { name: "Notifications", icon: "Bell",           path: "/principal/notifications" },
+        { name: "Announcements", icon: "Megaphone",      path: "/principal/announcements" },
+      ],
+    },
+    {
+      group: "Settings",
+      items: [
+        { name: "Profile",   icon: "UserCircle", path: "/principal/profile-settings" },
+        { name: "Settings",  icon: "Settings",   path: "/principal/settings" },
+      ],
+    },
+  ],
+
+  TEACHER: [
+    {
+      group: "Overview",
+      items: [
+        { name: "Dashboard", icon: "LayoutDashboard", path: "/teachers/dashboard" },
+      ],
+    },
+    {
+      group: "Attendance",
+      items: [
+        { name: "Take Attendance",  icon: "ClipboardCheck", path: "/teacher/attendance" },
+        { name: "My Attendance",    icon: "CalendarDays",   path: "/teacher/my-attendance" },
+      ],
+    },
+    {
+      group: "Academics",
+      items: [
+        { name: "Assign Homework",   icon: "BookOpen",     path: "/teacher/assign-homework" },
+        { name: "Exams & Tests",     icon: "ClipboardList",path: "/teacher/exams_and_tests" },
+        { name: "Student Remarks",   icon: "MessageSquare",path: "/teacher/remarks" },
+        { name: "Timetable",         icon: "Clock",        path: "/teacher/timetable" },
+      ],
+    },
+    {
+      group: "Personal",
+      items: [
+        { name: "My Salary",      icon: "IndianRupee", path: "/teacher/salary" },
+        { name: "Notifications",  icon: "Bell",        path: "/teacher/notifications" },
+        { name: "Profile",        icon: "UserCircle",  path: "/teacher/profile-settings" },
+        { name: "Settings",       icon: "Settings",    path: "/teacher/settings" },
+      ],
+    },
+  ],
+
+  CLASS_TEACHER: [
+    {
+      group: "Overview",
+      items: [
+        { name: "Dashboard", icon: "LayoutDashboard", path: "/teachers/dashboard" },
+      ],
+    },
+    {
+      group: "Class Management",
+      items: [
+        { name: "My Class",         icon: "BookOpen",     path: "/teacher/my-class" },
+        { name: "Take Attendance",  icon: "ClipboardCheck",path: "/teacher/attendance" },
+        { name: "My Attendance",    icon: "CalendarDays", path: "/teacher/my-attendance" },
+        { name: "Student Remarks",  icon: "MessageSquare",path: "/teacher/remarks" },
+      ],
+    },
+    {
+      group: "Academics",
+      items: [
+        { name: "Assign Homework",  icon: "BookOpen",      path: "/teacher/assign-homework" },
+        { name: "Exams & Tests",    icon: "ClipboardList", path: "/teacher/exams_and_tests" },
+        { name: "Timetable",        icon: "Clock",         path: "/teacher/timetable" },
+      ],
+    },
+    {
+      group: "Personal",
+      items: [
+        { name: "My Salary",      icon: "IndianRupee", path: "/teacher/salary" },
+        { name: "Notifications",  icon: "Bell",        path: "/teacher/notifications" },
+        { name: "Profile",        icon: "UserCircle",  path: "/teacher/profile-settings" },
+        { name: "Settings",       icon: "Settings",    path: "/teacher/settings" },
+      ],
+    },
+  ],
+
+  COUNSELOR: [
+    {
+      group: "Overview",
+      items: [
+        { name: "Dashboard",     icon: "LayoutDashboard", path: "/counselor/dashboard" },
+        { name: "Students",      icon: "Users",           path: "/counselor/students" },
+      ],
+    },
+    {
+      group: "Counseling",
+      items: [
+        { name: "Session Records", icon: "ClipboardList",  path: "/counselor/sessions" },
+        { name: "Student Remarks", icon: "MessageSquare",  path: "/counselor/remarks" },
+        { name: "Notifications",   icon: "Bell",           path: "/counselor/notifications" },
+      ],
+    },
+    {
+      group: "Personal",
+      items: [
+        { name: "My Attendance", icon: "CalendarDays", path: "/counselor/my-attendance" },
+        { name: "Profile",       icon: "UserCircle",   path: "/counselor/profile-settings" },
+      ],
+    },
+  ],
+
+  STUDENT: [
+    {
+      group: "Overview",
+      items: [
+        { name: "Dashboard",   icon: "LayoutDashboard", path: "/student/dashboard" },
+      ],
+    },
+    {
+      group: "Academics",
+      items: [
+        { name: "Timetable",    icon: "Clock",         path: "/student/timetable" },
+        { name: "Homework",     icon: "BookOpen",      path: "/student/homework" },
+        { name: "Results",      icon: "BarChart3",     path: "/student/results" },
+        { name: "Attendance",   icon: "ClipboardCheck",path: "/student/attendance" },
+      ],
+    },
+    {
+      group: "Finance",
+      items: [
+        { name: "My Fees",      icon: "IndianRupee",  path: "/student/fees" },
+      ],
+    },
+    {
+      group: "Other",
+      items: [
+        { name: "Notifications",icon: "Bell",         path: "/student/notifications" },
+        { name: "Profile",      icon: "UserCircle",   path: "/student/profile-settings" },
+      ],
+    },
+  ],
+
+  PARENT: [
+    {
+      group: "Overview",
+      items: [
+        { name: "Dashboard",   icon: "LayoutDashboard", path: "/parents/dashboard" },
+      ],
+    },
+    {
+      group: "Child Info",
+      items: [
+        { name: "Attendance",   icon: "ClipboardCheck", path: "/parent/attendance" },
+        { name: "Homework",     icon: "BookOpen",       path: "/parent/homework" },
+        { name: "Results",      icon: "BarChart3",      path: "/parent/results" },
+        { name: "Timetable",    icon: "Clock",          path: "/parent/timetable" },
+        { name: "Remarks",      icon: "MessageSquare",  path: "/parent/remarks" },
+      ],
+    },
+    {
+      group: "Finance & Transport",
+      items: [
+        { name: "Fee Payment",    icon: "IndianRupee", path: "/parent/fees" },
+        { name: "Bus Tracking",   icon: "Bus",         path: "/parent/bus-tracking" },
+      ],
+    },
+    {
+      group: "Other",
+      items: [
+        { name: "Notifications",  icon: "Bell",        path: "/parent/notifications" },
+        { name: "Profile",        icon: "UserCircle",  path: "/parent/profile-settings" },
+      ],
+    },
+  ],
+
+  ACCOUNTANT: [
+    {
+      group: "Finance",
+      items: [
+        { name: "Dashboard",       icon: "LayoutDashboard", path: "/accountant/dashboard" },
+        { name: "Fee Management",  icon: "IndianRupee",     path: "/accountant/fees" },
+        { name: "Revenue",         icon: "TrendingUp",      path: "/accountant/revenue" },
+        { name: "Expenses",        icon: "Receipt",         path: "/accountant/expenses" },
+        { name: "Salary Payroll",  icon: "Banknote",        path: "/accountant/payroll" },
+        { name: "Reports",         icon: "FileText",        path: "/accountant/reports" },
+      ],
+    },
+    {
+      group: "Personal",
+      items: [
+        { name: "My Attendance",  icon: "CalendarDays", path: "/accountant/my-attendance" },
+        { name: "Profile",        icon: "UserCircle",   path: "/accountant/profile-settings" },
+      ],
+    },
+  ],
+
+  CASHIER: [
+    {
+      group: "Fee Collection",
+      items: [
+        { name: "Dashboard",      icon: "LayoutDashboard", path: "/cashier/dashboard" },
+        { name: "Collect Fees",   icon: "IndianRupee",     path: "/cashier/collect-fees" },
+        { name: "Receipts",       icon: "Receipt",         path: "/cashier/receipts" },
+        { name: "Daily Report",   icon: "FileText",        path: "/cashier/daily-report" },
+      ],
+    },
+    {
+      group: "Personal",
+      items: [
+        { name: "My Attendance", icon: "CalendarDays", path: "/cashier/my-attendance" },
+        { name: "Profile",       icon: "UserCircle",   path: "/cashier/profile-settings" },
+      ],
+    },
+  ],
+
+  TRANSPORT_MANAGER: [
+    {
+      group: "Transport",
+      items: [
+        { name: "Dashboard",  icon: "LayoutDashboard", path: "/transport-manager/dashboard" },
+        { name: "Routes",     icon: "MapPin",          path: "/transport-manager/routes" },
+        { name: "Vehicles",   icon: "Bus",             path: "/transport-manager/vehicles" },
+        { name: "Drivers",    icon: "UserCheck",       path: "/transport-manager/drivers" },
+        { name: "Students",   icon: "Users",           path: "/transport-manager/students" },
+        { name: "Tracking",   icon: "Navigation",      path: "/transport-manager/tracking" },
+      ],
+    },
+    {
+      group: "Personal",
+      items: [
+        { name: "My Attendance", icon: "CalendarDays", path: "/transport-manager/my-attendance" },
+        { name: "Profile",       icon: "UserCircle",   path: "/transport-manager/profile-settings" },
+      ],
+    },
+  ],
+
+  BUS_DRIVER: [
+    {
+      group: "My Route",
+      items: [
+        { name: "Dashboard",    icon: "LayoutDashboard", path: "/bus-driver/dashboard" },
+        { name: "My Route",     icon: "MapPin",          path: "/bus-driver/route" },
+        { name: "Students",     icon: "Users",           path: "/bus-driver/students" },
+        { name: "Attendance",   icon: "ClipboardCheck",  path: "/bus-driver/attendance" },
+      ],
+    },
+    {
+      group: "Personal",
+      items: [
+        { name: "My Attendance", icon: "CalendarDays", path: "/bus-driver/my-attendance" },
+        { name: "Profile",       icon: "UserCircle",   path: "/bus-driver/profile-settings" },
+      ],
+    },
+  ],
+
+  LIBRARIAN: [
+    {
+      group: "Library",
+      items: [
+        { name: "Dashboard",    icon: "LayoutDashboard", path: "/librarian/dashboard" },
+        { name: "Books",        icon: "BookOpen",        path: "/librarian/books" },
+        { name: "Issue / Return", icon: "ArrowLeftRight",path: "/librarian/issue-return" },
+        { name: "Members",      icon: "Users",           path: "/librarian/members" },
+        { name: "Reports",      icon: "FileText",        path: "/librarian/reports" },
+      ],
+    },
+    {
+      group: "Personal",
+      items: [
+        { name: "My Attendance", icon: "CalendarDays", path: "/librarian/my-attendance" },
+        { name: "Profile",       icon: "UserCircle",   path: "/librarian/profile-settings" },
+      ],
+    },
+  ],
+
+  RECEPTIONIST: [
+    {
+      group: "Front Desk",
+      items: [
+        { name: "Dashboard",         icon: "LayoutDashboard", path: "/receptionist/dashboard" },
+        { name: "Visitor Management",icon: "Eye",             path: "/receptionist/visitors" },
+        { name: "Enquiries",         icon: "MessageSquare",   path: "/receptionist/enquiries" },
+        { name: "Notifications",     icon: "Bell",            path: "/receptionist/notifications" },
+      ],
+    },
+    {
+      group: "Personal",
+      items: [
+        { name: "My Attendance", icon: "CalendarDays", path: "/receptionist/my-attendance" },
+        { name: "Profile",       icon: "UserCircle",   path: "/receptionist/profile-settings" },
+      ],
+    },
+  ],
+
+  NURSE: [
+    {
+      group: "Health",
+      items: [
+        { name: "Dashboard",       icon: "LayoutDashboard", path: "/nurse/dashboard" },
+        { name: "Health Records",  icon: "HeartPulse",      path: "/nurse/health-records" },
+        { name: "Medical Stock",   icon: "Package",         path: "/nurse/medical-stock" },
+        { name: "Incidents",       icon: "AlertCircle",     path: "/nurse/incidents" },
+        { name: "Students",        icon: "Users",           path: "/nurse/students" },
+      ],
+    },
+    {
+      group: "Personal",
+      items: [
+        { name: "My Attendance", icon: "CalendarDays", path: "/nurse/my-attendance" },
+        { name: "Profile",       icon: "UserCircle",   path: "/nurse/profile-settings" },
+      ],
+    },
+  ],
+
+  SECURITY: [
+    {
+      group: "Security",
+      items: [
+        { name: "Dashboard",       icon: "LayoutDashboard", path: "/security/dashboard" },
+        { name: "Visitor Log",     icon: "Eye",             path: "/security/visitor-log" },
+        { name: "Gate Management", icon: "Shield",          path: "/security/gate" },
+      ],
+    },
+    {
+      group: "Personal",
+      items: [
+        { name: "My Attendance", icon: "CalendarDays", path: "/security/my-attendance" },
+        { name: "Profile",       icon: "UserCircle",   path: "/security/profile-settings" },
+      ],
+    },
+  ],
+
+  HOUSEKEEPING: [
+    {
+      group: "Tasks",
+      items: [
+        { name: "Dashboard",  icon: "LayoutDashboard", path: "/staff/dashboard" },
+        { name: "My Tasks",   icon: "ClipboardList",   path: "/staff/tasks" },
+      ],
+    },
+    {
+      group: "Personal",
+      items: [
+        { name: "My Attendance", icon: "CalendarDays", path: "/staff/my-attendance" },
+        { name: "Profile",       icon: "UserCircle",   path: "/staff/profile-settings" },
+      ],
+    },
+  ],
+
+  CANTEEN_STAFF: [
+    {
+      group: "Canteen",
+      items: [
+        { name: "Dashboard",  icon: "LayoutDashboard", path: "/staff/dashboard" },
+        { name: "Menu",       icon: "UtensilsCrossed", path: "/staff/canteen-menu" },
+        { name: "Orders",     icon: "ShoppingCart",    path: "/staff/orders" },
+      ],
+    },
+    {
+      group: "Personal",
+      items: [
+        { name: "My Attendance", icon: "CalendarDays", path: "/staff/my-attendance" },
+        { name: "Profile",       icon: "UserCircle",   path: "/staff/profile-settings" },
+      ],
+    },
+  ],
+
+  IT_ADMIN: [
+    {
+      group: "IT Management",
+      items: [
+        { name: "Dashboard",    icon: "LayoutDashboard", path: "/it-admin/dashboard" },
+        { name: "Users",        icon: "Users",           path: "/it-admin/users" },
+        { name: "System Logs",  icon: "FileText",        path: "/it-admin/logs" },
+        { name: "Settings",     icon: "Settings",        path: "/it-admin/settings" },
+        { name: "Integrations", icon: "Plug",            path: "/it-admin/integrations" },
+      ],
+    },
+    {
+      group: "Personal",
+      items: [
+        { name: "My Attendance", icon: "CalendarDays", path: "/it-admin/my-attendance" },
+        { name: "Profile",       icon: "UserCircle",   path: "/it-admin/profile-settings" },
+      ],
+    },
+  ],
+};
+
+// Roles that share an existing sidebar (map alias → canonical)
+export const SIDEBAR_ALIAS = {
+  VICE_PRINCIPAL: "PRINCIPAL",
+  CLASS_TEACHER:  "CLASS_TEACHER",   // has its own extended menu above
+  BUS_CONDUCTOR:  "BUS_DRIVER",
+  HOUSEKEEPING:   "HOUSEKEEPING",
+  CANTEEN_STAFF:  "CANTEEN_STAFF",
+};
+
+export const getMenuForRole = (role) => {
+  return ROLE_MENU[role] || ROLE_MENU["STUDENT"];
+};
