@@ -165,8 +165,7 @@ function App() {
         <Route path="/school-admin/inventory"         element={<ProtectedRoute roles={ADMIN_ROLES}><SchoolAdminDashboard /></ProtectedRoute>} />
         <Route path="/school-admin/staff"             element={<ProtectedRoute roles={ADMIN_ROLES}><StaffManagement /></ProtectedRoute>} />
         <Route path="/school-admin/admissions"        element={<ProtectedRoute roles={ADMIN_ROLES}><AdmissionManagement /></ProtectedRoute>} />
-        <Route path="/school-admin/alumni"            element={<ProtectedRoute roles={ADMIN_ROLES}><AlumniManagement /></ProtectedRoute>} />
-        <Route path="/school-admin/results"           element={<ProtectedRoute roles={ADMIN_ROLES}><SchoolAdminDashboard /></ProtectedRoute>} />
+        <Route path="/school-admin/alumni" element={<ProtectedRoute roles={ADMIN_ROLES}><AlumniManagement /></ProtectedRoute>} />        <Route path="/school-admin/results"           element={<ProtectedRoute roles={ADMIN_ROLES}><SchoolAdminDashboard /></ProtectedRoute>} />
         <Route path="/school-admin/health"            element={<ProtectedRoute roles={ADMIN_ROLES}><SchoolAdminDashboard /></ProtectedRoute>} />
 
         {/* ── Principal & Vice Principal ────────────────────────────────── */}
