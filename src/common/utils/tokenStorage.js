@@ -17,8 +17,9 @@ export const storeAuthData = (data) => {
     email: data.email,
     fullName: data.fullName,
     roles: data.roles,
-    schoolId: data.schoolId?.id,
-    userId: data.userId
+  schoolId: typeof data.schoolId === 'object' ? data.schoolId?.id : data.schoolId, // ← safe
+    userId: data.userId,
+    teacherId: data.teacherId ?? null, 
   };
 
   localStorage.setItem(USER_DATA, JSON.stringify(user));

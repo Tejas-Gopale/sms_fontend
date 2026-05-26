@@ -71,9 +71,10 @@ export default function SchoolAdminSidebar() {
       group: "Operations & Finance",
       items: [
         { name: "Fees Management", icon: IndianRupee, path: "/school-admin/fees" },
-        { name: "Inventory",       icon: Package,     path: "/school-admin/inventory" },
+        // { name: "Inventory",       icon: Package,     path: "/school-admin/inventory" },
         { name: "Transport",       icon: Bus,         path: "/school-admin/transport" },
         { name: "Hostel",          icon: Home,        path: "/school-admin/hostel" },
+        {name : "Leavee Management", icon: UserCircle, path: "/school-admin/leave-management" }
       ],
     },
     {

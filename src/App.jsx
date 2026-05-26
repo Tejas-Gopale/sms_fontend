@@ -63,6 +63,8 @@ import TeacherAttendance       from "./teachers/pages/TeacherAttendance";
 import TakeAttendance          from "./teachers/pages/TakeAttendance";
 import TeacherTimetable        from "./teachers/pages/Timetable";
 import TeacherSettings         from "./teachers/pages/Teacher_settings";
+import TeacherLeave            from "./teachers/pages/TeacherLeave";
+import TeacherGpsAttendance    from "./teachers/pages/TeacherGpsAttendance";
 
 // ── Counselor ───────────────────────────────────────────────────────────────
 import CounselorDashboard      from "./counselor/pages/CounselorDashboard";
@@ -98,6 +100,7 @@ import {
   StaffDashboard,
   ITAdminDashboard,
 } from "./role_dashboards/MinorRoleDashboards";
+import AdminLeaveManagement from "./school_admin/pages/Adminleavemanagement";
 
 // ── Helper wrapper ───────────────────────────────────────────────────────────
 function TimetableCreatorPage() {
@@ -157,17 +160,15 @@ function App() {
         <Route path="/school-admin/settings"          element={<ProtectedRoute roles={ADMIN_ROLES}><Settings /></ProtectedRoute>} />
         <Route path="/school-admin/profile-settings"  element={<ProtectedRoute roles={ADMIN_ROLES}><ProfilePage /></ProtectedRoute>} />
         <Route path="/school-admin/visitors"          element={<ProtectedRoute roles={ADMIN_ROLES}><VisitorManagementPage /></ProtectedRoute>} />
-        <Route path="/school-admin/analytics"         element={<ProtectedRoute roles={ADMIN_ROLES}><SchoolAdminDashboard /></ProtectedRoute>} />
+       
         <Route path="/school-admin/events"            element={<ProtectedRoute roles={ADMIN_ROLES}><EventManagement /></ProtectedRoute>} />
         <Route path="/school-admin/library"           element={<ProtectedRoute roles={ADMIN_ROLES}><LibraryManagement /></ProtectedRoute>} />
         <Route path="/school-admin/transport"         element={<ProtectedRoute roles={ADMIN_ROLES}><TransportManagement /></ProtectedRoute>} />
         <Route path="/school-admin/hostel"            element={<ProtectedRoute roles={ADMIN_ROLES}><HostelManagement /></ProtectedRoute>} />
-        <Route path="/school-admin/inventory"         element={<ProtectedRoute roles={ADMIN_ROLES}><SchoolAdminDashboard /></ProtectedRoute>} />
+        <Route path="/school-admin/leave-management"  element={<ProtectedRoute roles={ADMIN_ROLES}><AdminLeaveManagement /></ProtectedRoute>} /> 
         <Route path="/school-admin/staff"             element={<ProtectedRoute roles={ADMIN_ROLES}><StaffManagement /></ProtectedRoute>} />
         <Route path="/school-admin/admissions"        element={<ProtectedRoute roles={ADMIN_ROLES}><AdmissionManagement /></ProtectedRoute>} />
-        <Route path="/school-admin/alumni" element={<ProtectedRoute roles={ADMIN_ROLES}><AlumniManagement /></ProtectedRoute>} />        <Route path="/school-admin/results"           element={<ProtectedRoute roles={ADMIN_ROLES}><SchoolAdminDashboard /></ProtectedRoute>} />
-        <Route path="/school-admin/health"            element={<ProtectedRoute roles={ADMIN_ROLES}><SchoolAdminDashboard /></ProtectedRoute>} />
-
+        <Route path="/school-admin/alumni" element={<ProtectedRoute roles={ADMIN_ROLES}><AlumniManagement /></ProtectedRoute>} />
         {/* ── Principal & Vice Principal ────────────────────────────────── */}
         <Route path="/principal/dashboard"      element={<ProtectedRoute roles={PRINCIPAL_ROLES}><PrincipalDashboard /></ProtectedRoute>} />
         <Route path="/principal/students"       element={<ProtectedRoute roles={PRINCIPAL_ROLES}><Students /></ProtectedRoute>} />
@@ -194,6 +195,8 @@ function App() {
         <Route path="/teacher/notifications"    element={<ProtectedRoute roles={TEACHER_ROLES}><TeacherNotifications /></ProtectedRoute>} />
         <Route path="/teacher/timetable"        element={<ProtectedRoute roles={TEACHER_ROLES}><TeacherTimetable /></ProtectedRoute>} />
         <Route path="/teacher/settings"         element={<ProtectedRoute roles={TEACHER_ROLES}><TeacherSettings /></ProtectedRoute>} />
+        <Route path="/teacher/leave"            element={<ProtectedRoute roles={TEACHER_ROLES}><TeacherLeave /></ProtectedRoute>} />
+        <Route path="/teacher/gps-attendance"   element={<ProtectedRoute roles={TEACHER_ROLES}><TeacherGpsAttendance /></ProtectedRoute>} />
         <Route path="/teacher/profile-settings" element={<ProtectedRoute roles={TEACHER_ROLES}><ProfilePage /></ProtectedRoute>} />
         {/* Class Teacher extra */}
         <Route path="/teacher/my-class"         element={<ProtectedRoute roles={["CLASS_TEACHER"]}><Students /></ProtectedRoute>} />
