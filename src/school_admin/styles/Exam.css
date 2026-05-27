@@ -1,4 +1,43 @@
- @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+ /* src/school_admin/styles/Exam.css */
+/* Used by: Exams.jsx (school admin exam management page) */
+
+/* ── CSS is mostly inline in the JSX (no Tailwind) ── */
+/* This file provides print styles + any global overrides needed */
+
+/* Smooth spin animation for loaders */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Print: show only the report card div */
+@media print {
+  body * { visibility: hidden; }
+  #reportCardPrint, #reportCardPrint * { visibility: visible; }
+  #reportCardPrint {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 20px;
+    box-shadow: none !important;
+  }
+}
+
+/* Scrollbar tweaks for tables */
+.table-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+.table-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+.table-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+
+ /* @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
         .dashboard-container {
           display: flex;
@@ -15,7 +54,7 @@
         }
 
         /* --- Page Header --- */
-        .page-header {
+        /* .page-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
@@ -33,10 +72,10 @@
           color: #64748b;
           font-size: 0.875rem;
           margin-top: 0.25rem;
-        }
+        } */
 
         /* --- Tab System --- */
-        .tab-nav {
+        /* .tab-nav {
           display: flex;
           background: #e2e8f0;
           padding: 0.25rem;
@@ -63,10 +102,10 @@
           background: white;
           color: #4f46e5;
           box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
+        }  */
 
         /* --- Filter Bar --- */
-        .filter-card {
+        /* .filter-card {
           background: white;
           padding: 1.25rem;
           border-radius: 1rem;
@@ -89,10 +128,10 @@
           background-color: #f8fafc;
         }
 
-        .form-select:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+        .form-select:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); } */
 
         /* --- Buttons --- */
-        .btn {
+        /* .btn {
           display: inline-flex;
           align-items: center;
           gap: 0.5rem;
@@ -113,7 +152,7 @@
         .btn-ghost:hover { background: #f8fafc; }
 
         /* --- Content Card --- */
-        .content-card {
+        /* .content-card {
           background: white;
           border-radius: 1rem;
           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -128,10 +167,10 @@
           align-items: center;
         }
 
-        .card-header h2 { font-size: 1.125rem; font-weight: 600; color: #1e293b; margin: 0; }
+        .card-header h2 { font-size: 1.125rem; font-weight: 600; color: #1e293b; margin: 0; } */
 
         /* --- Tables --- */
-        .table-responsive { width: 100%; overflow-x: auto; }
+        /* .table-responsive { width: 100%; overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; text-align: left; }
         th { background: #f8fafc; padding: 1rem; font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700; border-bottom: 1px solid #f1f5f9; }
         td { padding: 1rem; border-bottom: 1px solid #f1f5f9; color: #334155; font-size: 0.875rem; }
@@ -145,10 +184,10 @@
         }
         .grade-A { background: #dcfce7; color: #166534; }
         .grade-F { background: #fee2e2; color: #991b1b; }
-        .grade-default { background: #e0e7ff; color: #3730a3; }
+        .grade-default { background: #e0e7ff; color: #3730a3; } */
 
         /* --- Upload View --- */
-        .upload-grid {
+        /* .upload-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
           gap: 1.5rem;
@@ -175,5 +214,5 @@
           border-top-color: #fff;
           animation: spin 1s ease-in-out infinite;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes spin { to { transform: rotate(360deg); } } */ 
       
