@@ -1,18 +1,58 @@
+// src/parents/pages/ParentResults.jsx
+// Role: PARENT
+// API: GET /parent/exams/{studentId}       → getExamResults (list of exams)
+//      GET /parent/exams/detail/{examId}/{studentId}  → getExamDetail (subject breakdown)
+
 import { useState, useEffect } from "react";
 import ParentSidebar from "../components/ParentSidebar";
-import { Loader2, AlertCircle, FileText } from "lucide-react";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
-import { getExamResults } from "../../common/services/parentService";
+import { Loader2, AlertCircle, FileText, Download, Printer, ChevronDown } from "lucide-react";
+import { getExamResults, getExamDetail } from "../../common/services/parentService";
 import useParentStudent from "../../common/hooks/useParentStudent";
 
+// ── grade helper ──────────────────────────────────────────────────────────────
+const getGrade = (p) => {
+  if (p >= 90) return "A+";
+  if (p >= 80) return "A";
+  if (p >= 70) return "B";
+  if (p >= 60) return "C";
+  if (p >= 50) return "D";
+  return "F";
+};
+
+const GC = { "A+": "#059669", A: "#10b981", B: "#3b82f6", C: "#f59e0b", D: "#f97316", F: "#ef4444" };
+const gc = (g) => GC[g] || "#6b7280";
+const pc = (p) => (p >= 33 ? "#059669" : "#ef4444");
+
+// ── Print styles injected once ────────────────────────────────────────────────
+const PRINT_STYLE = `
+  @media print {
+    body * { visibility: hidden; }
+    #resultCard, #resultCard * { visibility: visible; }
+    #resultCard { position: absolute; left: 0; top: 0; width: 100%; }
+    .no-print { display: none !important; }
+  }
+`;
+
+// ─────────────────────────────────────────────────────────────────────────────
 export default function ParentResults() {
   const { studentId, loading: sidLoading, error: sidError } = useParentStudent();
-  const [exams,        setExams]        = useState([]);
-  const [selectedExam, setSelectedExam] = useState(null);
-  const [loading,      setLoading]      = useState(false);
-  const [error,        setError]        = useState(null);
 
+  const [exams, setExams]               = useState([]);     // list of exam summaries
+  const [selectedExam, setSelectedExam] = useState(null);   // currently shown exam summary
+  const [detail, setDetail]             = useState(null);   // subject-wise detail for selected exam
+  const [loading, setLoading]           = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [error, setError]               = useState(null);
+
+  // ── Inject print style ──────────────────────────────────────────────────────
+  useEffect(() => {
+    const el = document.createElement("style");
+    el.innerHTML = PRINT_STYLE;
+    document.head.appendChild(el);
+    return () => document.head.removeChild(el);
+  }, []);
+
+  // ── Load exam list ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!studentId) return;
     setLoading(true);
@@ -20,142 +60,225 @@ export default function ParentResults() {
       .then((res) => {
         const data = res.data ?? [];
         setExams(data);
-        if (data.length > 0) setSelectedExam(data[0]);
+        if (data.length > 0) {
+          setSelectedExam(data[0]);
+          loadDetail(data[0]);
+        }
       })
       .catch(() => setError("Could not load exam results."))
       .finally(() => setLoading(false));
   }, [studentId]);
 
+  // ── Load subject-wise detail ────────────────────────────────────────────────
+  const loadDetail = (exam) => {
+    if (!exam?.examId || !studentId) return;
+    setDetailLoading(true);
+    getExamDetail(exam.examId, studentId)
+      .then((res) => setDetail(res.data ?? null))
+      .catch(() => setDetail(null))           // graceful – fallback to summary data
+      .finally(() => setDetailLoading(false));
+  };
+
+  const handleExamChange = (examId) => {
+    const found = exams.find((x) => String(x.examId) === String(examId));
+    if (!found) return;
+    setSelectedExam(found);
+    setDetail(null);
+    loadDetail(found);
+  };
+
+  // ── Download as PDF via browser print ─────────────────────────────────────
   const handlePrint = () => window.print();
 
+  // ── Download PDF using html2canvas + jsPDF (optional, if installed) ────────
   const handleDownload = async () => {
-    const input = document.getElementById("resultCard");
-    if (!input) return;
-    const canvas = await html2canvas(input);
-    const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF();
-    const imgWidth = 190;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    pdf.addImage(imgData, "PNG", 10, 10, imgWidth, imgHeight);
-    pdf.save(`${selectedExam?.examName ?? "Result"}.pdf`);
+    try {
+      const { default: html2canvas } = await import("html2canvas");
+      const { default: jsPDF }       = await import("jspdf");
+      const input = document.getElementById("resultCard");
+      if (!input) return handlePrint();
+      const canvas = await html2canvas(input, { scale: 2 });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const imgWidth = 190;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      pdf.addImage(imgData, "PNG", 10, 10, imgWidth, imgHeight);
+      pdf.save(`${selectedExam?.examName ?? "Result"}.pdf`);
+    } catch {
+      // html2canvas not installed → fallback to print
+      handlePrint();
+    }
   };
 
-  const getGrade = (p) => {
-    if (p >= 90) return "A+";
-    if (p >= 80) return "A";
-    if (p >= 70) return "B";
-    if (p >= 60) return "C";
-    if (p >= 50) return "D";
-    return "F";
-  };
+  // ── resolve subjects array (detail API first, then fallback to summary) ────
+  const subjects = detail?.subjects ?? selectedExam?.subjects ?? [];
+  const summary  = detail?.summary  ?? selectedExam;
 
+  // ── render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div style={{ display: "flex", minHeight: "100vh", background: "#f8fafc", fontFamily: "'Inter',sans-serif" }}>
       <ParentSidebar />
-      <div className="flex-1 p-6 md:p-8">
+
+      <div style={{ flex: 1, padding: "28px 32px", overflowY: "auto" }}>
 
         {/* Header */}
-        <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
-          <h1 className="text-3xl font-bold text-slate-800">📊 Exam Result</h1>
-          <div className="flex gap-3 flex-wrap">
+        <div className="no-print" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28, flexWrap: "wrap", gap: 12 }}>
+          <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: "#1e293b" }}>📊 Exam Results</h1>
+
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             {exams.length > 0 && (
-              <select
-                value={selectedExam?.examId ?? ""}
-                onChange={(e) => {
-                  const found = exams.find((x) => String(x.examId) === e.target.value);
-                  setSelectedExam(found ?? null);
-                }}
-                className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
-              >
-                {exams.map((exam) => (
-                  <option key={exam.examId} value={exam.examId}>{exam.examName}</option>
-                ))}
-              </select>
+              <div style={{ position: "relative" }}>
+                <select
+                  value={selectedExam?.examId ?? ""}
+                  onChange={(e) => handleExamChange(e.target.value)}
+                  style={{ border: "1.5px solid #e2e8f0", borderRadius: 8, padding: "8px 36px 8px 12px", fontSize: 14, background: "#fff", appearance: "none", cursor: "pointer", fontFamily: "inherit", outline: "none" }}>
+                  {exams.map((ex) => (
+                    <option key={ex.examId} value={ex.examId}>{ex.examName}</option>
+                  ))}
+                </select>
+                <ChevronDown size={14} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "#64748b", pointerEvents: "none" }} />
+              </div>
             )}
-            <button onClick={handleDownload} className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow text-sm">Download PDF</button>
-            <button onClick={handlePrint}    className="bg-green-600 text-white px-4 py-2 rounded-lg shadow text-sm">Print Result</button>
+            <button onClick={handleDownload}
+              style={{ display: "flex", alignItems: "center", gap: 6, background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, padding: "9px 16px", cursor: "pointer", fontWeight: 600, fontSize: 14 }}>
+              <Download size={15} /> Download PDF
+            </button>
+            <button onClick={handlePrint}
+              style={{ display: "flex", alignItems: "center", gap: 6, background: "#059669", color: "#fff", border: "none", borderRadius: 8, padding: "9px 16px", cursor: "pointer", fontWeight: 600, fontSize: 14 }}>
+              <Printer size={15} /> Print
+            </button>
           </div>
         </div>
 
+        {/* Loading / error states */}
         {(loading || sidLoading) && (
-          <div className="flex justify-center mt-20"><Loader2 className="animate-spin text-indigo-500" size={40} /></div>
+          <div style={{ display: "flex", justifyContent: "center", marginTop: 80 }}>
+            <Loader2 size={40} color="#6366f1" style={{ animation: "spin 1s linear infinite" }} />
+          </div>
         )}
         {(error || sidError) && (
-          <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-5 py-4 text-red-600">
+          <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 12, padding: "14px 20px", color: "#dc2626" }}>
             <AlertCircle size={20} />{error || sidError}
           </div>
         )}
-
         {!loading && !sidLoading && !error && !sidError && !selectedExam && (
-          <div className="flex flex-col items-center mt-20 text-slate-400 gap-3">
-            <FileText size={48} /><p>No exam results found.</p>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 80, color: "#94a3b8", gap: 12 }}>
+            <FileText size={52} />
+            <p style={{ margin: 0, fontSize: 15 }}>No exam results found for this student.</p>
           </div>
         )}
 
-        {selectedExam && (
-          <div id="resultCard" className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
-            {/* Student Info */}
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold mb-3 text-slate-800">{selectedExam.examName}</h2>
-              <div className="grid grid-cols-2 gap-4 text-gray-700 text-sm">
-                <p><strong>Student Name:</strong> {selectedExam.studentName}</p>
-                <p><strong>Class:</strong> {selectedExam.className}</p>
-                <p><strong>Roll Number:</strong> {selectedExam.rollNumber}</p>
-                <p><strong>Academic Year:</strong> {selectedExam.academicYear}</p>
-              </div>
+        {/* Report Card */}
+        {selectedExam && !loading && !sidLoading && (
+          <div id="resultCard" style={{ background: "#fff", borderRadius: 16, padding: 32, boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
+
+            {/* School/exam header */}
+            <div style={{ textAlign: "center", borderBottom: "2px solid #4f46e5", paddingBottom: 16, marginBottom: 24 }}>
+              <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "#1e293b" }}>
+                {summary?.schoolName || "School Report Card"}
+              </h2>
+              <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 14 }}>
+                Progress Report — {summary?.academicYear || selectedExam.academicYear || ""}
+              </p>
             </div>
 
-            {/* Marks Table */}
-            <table className="w-full border mb-6 text-sm">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="p-3 border text-left">Subject</th>
-                  <th className="p-3 border">Marks</th>
-                  <th className="p-3 border">Max</th>
-                  <th className="p-3 border">Grade</th>
-                  <th className="p-3 border">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedExam.subjects?.map((r, i) => (
-                  <tr key={i} className="text-center border-t hover:bg-gray-50">
-                    <td className="p-3 border text-left">{r.subjectName}</td>
-                    <td className="p-3 border">{r.marksObtained}</td>
-                    <td className="p-3 border">{r.maxMarks}</td>
-                    <td className="p-3 border">{r.grade ?? getGrade((r.marksObtained / r.maxMarks) * 100)}</td>
-                    <td className="p-3 border">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${r.status === "Pass" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>
-                        {r.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {/* Summary */}
-            <div className="grid grid-cols-4 gap-4 text-center mb-6">
+            {/* Student info */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24, background: "#f8fafc", borderRadius: 12, padding: "16px 20px" }}>
               {[
-                { label: "Total",   value: `${selectedExam.totalMarks}/${selectedExam.maxMarks}` },
-                { label: "%",       value: `${selectedExam.percentage ?? 0}%` },
-                { label: "Grade",   value: selectedExam.grade ?? getGrade(selectedExam.percentage ?? 0) },
-                { label: "Result",  value: selectedExam.result ?? (selectedExam.percentage >= 40 ? "Pass" : "Fail"), className: (selectedExam.result ?? (selectedExam.percentage >= 40 ? "Pass" : "Fail")) === "Pass" ? "text-green-600" : "text-red-600" },
-              ].map((s) => (
-                <div key={s.label} className="bg-slate-50 rounded-xl p-3">
-                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">{s.label}</p>
-                  <p className={`text-xl font-bold mt-1 ${s.className ?? "text-slate-800"}`}>{s.value}</p>
+                ["Student Name", selectedExam.studentName],
+                ["Class",        selectedExam.className],
+                ["Roll No.",     selectedExam.rollNumber],
+                ["Exam",         selectedExam.examName],
+                ["Academic Year",selectedExam.academicYear],
+                ["Admission No.",selectedExam.admissionNumber],
+              ].map(([l, v]) => v && (
+                <div key={l}>
+                  <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, marginBottom: 2 }}>{l}</div>
+                  <div style={{ fontWeight: 700, color: "#1e293b" }}>{v}</div>
                 </div>
               ))}
             </div>
 
-            {selectedExam.classRank && (
-              <p className="text-sm text-slate-500 mb-4">🏆 Class Rank: <b>{selectedExam.classRank}</b></p>
+            {/* Subject detail loading */}
+            {detailLoading && (
+              <div style={{ textAlign: "center", padding: 24, color: "#94a3b8" }}>
+                Loading subject details...
+              </div>
             )}
 
+            {/* Subjects table */}
+            {!detailLoading && (
+              <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 24 }}>
+                <thead>
+                  <tr style={{ background: "#4f46e5" }}>
+                    {["Subject", "Marks", "Max Marks", "%", "Grade", "Status"].map((h) => (
+                      <th key={h} style={{ padding: "10px 14px", color: "#fff", textAlign: "left", fontWeight: 600, fontSize: 13 }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {subjects.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} style={{ padding: 32, textAlign: "center", color: "#94a3b8" }}>
+                        Subject-wise breakdown not available.
+                      </td>
+                    </tr>
+                  ) : (
+                    subjects.map((r, i) => {
+                      const pct = r.percentage ?? (r.maxMarks ? (r.marksObtained / r.maxMarks) * 100 : null);
+                      const grade = r.grade ?? (pct != null ? getGrade(pct) : "—");
+                      const pass = r.status === "Pass" || (pct != null && pct >= 33);
+                      return (
+                        <tr key={i} style={{ background: i % 2 === 0 ? "#f8fafc" : "#fff", borderBottom: "1px solid #f1f5f9" }}>
+                          <td style={{ padding: "11px 14px", fontWeight: 600 }}>{r.subjectName || r.subject}</td>
+                          <td style={{ padding: "11px 14px" }}>{r.marksObtained}</td>
+                          <td style={{ padding: "11px 14px" }}>{r.maxMarks || r.totalMarks}</td>
+                          <td style={{ padding: "11px 14px", fontWeight: 700, color: pct != null ? pc(pct) : "#64748b" }}>
+                            {pct != null ? `${pct.toFixed(1)}%` : "—"}
+                          </td>
+                          <td style={{ padding: "11px 14px" }}>
+                            <span style={{ background: gc(grade) + "25", color: gc(grade), borderRadius: 6, padding: "2px 8px", fontWeight: 700 }}>{grade}</span>
+                          </td>
+                          <td style={{ padding: "11px 14px" }}>
+                            <span style={{ background: pass ? "#dcfce7" : "#fee2e2", color: pass ? "#059669" : "#dc2626", borderRadius: 6, padding: "3px 10px", fontWeight: 600, fontSize: 12 }}>
+                              {r.status || (pass ? "Pass" : "Fail")}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            )}
+
+            {/* Summary cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 20 }}>
+              {[
+                { label: "Total Marks",  value: `${selectedExam.totalMarks ?? summary?.totalMarks ?? "—"} / ${selectedExam.maxMarks ?? summary?.maxMarks ?? "—"}` },
+                { label: "Percentage",   value: `${selectedExam.percentage ?? 0}%`, color: pc(selectedExam.percentage ?? 0) },
+                { label: "Grade",        value: selectedExam.grade ?? getGrade(selectedExam.percentage ?? 0), color: gc(selectedExam.grade ?? getGrade(selectedExam.percentage ?? 0)) },
+                { label: "Result",       value: selectedExam.result ?? ((selectedExam.percentage ?? 0) >= 33 ? "Pass" : "Fail"), color: ((selectedExam.percentage ?? 0) >= 33) ? "#059669" : "#dc2626" },
+              ].map((s) => (
+                <div key={s.label} style={{ background: "#f8fafc", borderRadius: 10, padding: "14px 16px", textAlign: "center" }}>
+                  <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>{s.label}</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: s.color || "#1e293b" }}>{s.value}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Class rank if available */}
+            {selectedExam.classRank && (
+              <p style={{ margin: "0 0 16px", color: "#64748b", fontSize: 13 }}>
+                🏆 Class Rank: <strong style={{ color: "#1e293b" }}>{selectedExam.classRank}</strong>
+              </p>
+            )}
+
+            {/* Teacher remark */}
             {selectedExam.teacherRemark && (
-              <div>
-                <h3 className="font-semibold mb-1 text-slate-700">Teacher Remark</h3>
-                <p className="text-gray-600 text-sm">{selectedExam.teacherRemark}</p>
+              <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "14px 18px" }}>
+                <h3 style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 700, color: "#92400e" }}>Teacher's Remark</h3>
+                <p style={{ margin: 0, color: "#78350f", fontSize: 14 }}>{selectedExam.teacherRemark}</p>
               </div>
             )}
           </div>
