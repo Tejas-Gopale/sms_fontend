@@ -1206,7 +1206,7 @@ export default function AdminExams() {
 //   const [editingExamId, setEditingExamId] = useState(null);
 //   const [slotForm, setSlotForm] = useState(BLANK_SLOT);
 //   const [editingResult, setEditingResult] = useState(null);
-  const [recalculating, setRecalculating] = useState(false);
+  // const [recalculating, setRecalculating] = useState(false);
 //   const [rcStudentId, setRcStudentId] = useState("");
 
 //   // upload
