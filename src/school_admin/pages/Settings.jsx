@@ -171,6 +171,9 @@ export default function Settings() {
     udiseCode: "",
     establishedYear: "",
     logoUrl: "",
+    latitude: "",
+    longitude: "",
+    attendanceRadiusMeters: "100",
   });
 
   // ── Notification state ───────────────────────────────────────────
@@ -486,6 +489,75 @@ export default function Settings() {
                       {ACADEMIC_YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
                     </select>
                   </Field>
+                </div>
+                <SaveBar loading={saving.school} onSave={saveSchool} />
+              </SectionCard>
+
+              {/* GPS Location */}
+              <SectionCard title="GPS Attendance Location" subtitle="Set school coordinates for teacher geo-attendance" icon={MapPin} iconColor="text-green-600" iconBg="bg-green-50">
+                <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-xl flex items-start gap-2">
+                  <Info size={15} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-green-700">Teachers can only mark attendance when they are within the allowed radius from school. Set the correct coordinates below.</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Field label="Latitude" hint="e.g. 19.0760">
+                    <div className="relative">
+                      <MapPin size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="number"
+                        step="0.000001"
+                        value={school.latitude}
+                        onChange={(e) => setSchool((p) => ({ ...p, latitude: e.target.value }))}
+                        className={`${inp} pl-9`}
+                        placeholder="19.076090"
+                      />
+                    </div>
+                  </Field>
+                  <Field label="Longitude" hint="e.g. 72.8777">
+                    <div className="relative">
+                      <MapPin size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="number"
+                        step="0.000001"
+                        value={school.longitude}
+                        onChange={(e) => setSchool((p) => ({ ...p, longitude: e.target.value }))}
+                        className={`${inp} pl-9`}
+                        placeholder="72.877426"
+                      />
+                    </div>
+                  </Field>
+                  <Field label="Allowed Radius (meters)" hint="Teachers must be within this distance">
+                    <input
+                      type="number"
+                      min="10"
+                      max="5000"
+                      value={school.attendanceRadiusMeters}
+                      onChange={(e) => setSchool((p) => ({ ...p, attendanceRadiusMeters: e.target.value }))}
+                      className={inp}
+                      placeholder="100"
+                    />
+                  </Field>
+                </div>
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!navigator.geolocation) return;
+                      navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                          setSchool((p) => ({
+                            ...p,
+                            latitude: pos.coords.latitude.toFixed(6),
+                            longitude: pos.coords.longitude.toFixed(6),
+                          }));
+                        },
+                        () => alert("Location access denied. Please enter manually.")
+                      );
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 border border-green-300 text-green-700 text-sm font-semibold rounded-xl hover:bg-green-50 transition-colors"
+                  >
+                    <MapPin size={14} /> Use My Current Location
+                  </button>
                 </div>
                 <SaveBar loading={saving.school} onSave={saveSchool} />
               </SectionCard>
