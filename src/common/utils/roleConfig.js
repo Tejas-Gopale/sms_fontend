@@ -87,6 +87,13 @@ export const ROLE_MENU = {
         { name: "Enrollment",   icon: "Users",           path: "/school-owner/enrollment" },
       ],
     },
+    {
+      group: "Account",
+      items: [
+        { name: "Profile",  icon: "UserCircle", path: "/school-owner/profile-settings" },
+        { name: "Settings", icon: "Settings",   path: "/school-owner/settings" },
+      ],
+    },
   ],
 
   SCHOOL_ADMIN: [
@@ -264,6 +271,7 @@ export const ROLE_MENU = {
       items: [
         { name: "My Attendance", icon: "CalendarDays", path: "/counselor/my-attendance" },
         { name: "Profile",       icon: "UserCircle",   path: "/counselor/profile-settings" },
+        { name: "Settings",      icon: "Settings",      path: "/counselor/settings" },
       ],
     },
   ],
@@ -295,6 +303,7 @@ export const ROLE_MENU = {
       items: [
         { name: "Notifications",icon: "Bell",         path: "/student/notifications" },
         { name: "Profile",      icon: "UserCircle",   path: "/student/profile-settings" },
+        { name: "Settings",     icon: "Settings",     path: "/student/settings" },
       ],
     },
   ],
@@ -328,6 +337,7 @@ export const ROLE_MENU = {
       items: [
         { name: "Notifications",  icon: "Bell",        path: "/parent/notifications" },
         { name: "Profile",        icon: "UserCircle",  path: "/parent/profile-settings" },
+        { name: "Settings",       icon: "Settings",    path: "/parent/settings" },
       ],
     },
   ],
@@ -349,6 +359,7 @@ export const ROLE_MENU = {
       items: [
         { name: "My Attendance",  icon: "CalendarDays", path: "/accountant/my-attendance" },
         { name: "Profile",        icon: "UserCircle",   path: "/accountant/profile-settings" },
+        { name: "Settings",       icon: "Settings",      path: "/accountant/settings" },
       ],
     },
   ],
@@ -368,6 +379,7 @@ export const ROLE_MENU = {
       items: [
         { name: "My Attendance", icon: "CalendarDays", path: "/cashier/my-attendance" },
         { name: "Profile",       icon: "UserCircle",   path: "/cashier/profile-settings" },
+        { name: "Settings",      icon: "Settings",     path: "/cashier/settings" },
       ],
     },
   ],
@@ -389,6 +401,7 @@ export const ROLE_MENU = {
       items: [
         { name: "My Attendance", icon: "CalendarDays", path: "/transport-manager/my-attendance" },
         { name: "Profile",       icon: "UserCircle",   path: "/transport-manager/profile-settings" },
+        { name: "Settings",      icon: "Settings",     path: "/transport-manager/settings" },
       ],
     },
   ],
@@ -408,6 +421,7 @@ export const ROLE_MENU = {
       items: [
         { name: "My Attendance", icon: "CalendarDays", path: "/bus-driver/my-attendance" },
         { name: "Profile",       icon: "UserCircle",   path: "/bus-driver/profile-settings" },
+        { name: "Settings",      icon: "Settings",     path: "/bus-driver/settings" },
       ],
     },
   ],
@@ -428,6 +442,7 @@ export const ROLE_MENU = {
       items: [
         { name: "My Attendance", icon: "CalendarDays", path: "/librarian/my-attendance" },
         { name: "Profile",       icon: "UserCircle",   path: "/librarian/profile-settings" },
+        { name: "Settings",      icon: "Settings",     path: "/librarian/settings" },
       ],
     },
   ],
@@ -447,6 +462,7 @@ export const ROLE_MENU = {
       items: [
         { name: "My Attendance", icon: "CalendarDays", path: "/receptionist/my-attendance" },
         { name: "Profile",       icon: "UserCircle",   path: "/receptionist/profile-settings" },
+        { name: "Settings",      icon: "Settings",     path: "/receptionist/settings" },
       ],
     },
   ],
@@ -467,6 +483,7 @@ export const ROLE_MENU = {
       items: [
         { name: "My Attendance", icon: "CalendarDays", path: "/nurse/my-attendance" },
         { name: "Profile",       icon: "UserCircle",   path: "/nurse/profile-settings" },
+        { name: "Settings",      icon: "Settings",     path: "/nurse/settings" },
       ],
     },
   ],
@@ -485,6 +502,7 @@ export const ROLE_MENU = {
       items: [
         { name: "My Attendance", icon: "CalendarDays", path: "/security/my-attendance" },
         { name: "Profile",       icon: "UserCircle",   path: "/security/profile-settings" },
+        { name: "Settings",      icon: "Settings",     path: "/security/settings" },
       ],
     },
   ],
@@ -502,6 +520,7 @@ export const ROLE_MENU = {
       items: [
         { name: "My Attendance", icon: "CalendarDays", path: "/staff/my-attendance" },
         { name: "Profile",       icon: "UserCircle",   path: "/staff/profile-settings" },
+        { name: "Settings",      icon: "Settings",     path: "/staff/settings" },
       ],
     },
   ],
@@ -520,6 +539,7 @@ export const ROLE_MENU = {
       items: [
         { name: "My Attendance", icon: "CalendarDays", path: "/staff/my-attendance" },
         { name: "Profile",       icon: "UserCircle",   path: "/staff/profile-settings" },
+        { name: "Settings",      icon: "Settings",     path: "/staff/settings" },
       ],
     },
   ],
