@@ -265,7 +265,7 @@ function ProfileTab({ addToast, roleLabel }) {
       .then((r) => {
         const d = r.data;
         setForm((p) => ({
-          ...p,
+          ...p, 
           fullName:         d.fullName         || p.fullName,
           email:            d.email            || p.email,
           phoneNumber:      d.phoneNumber      || "",

@@ -89,7 +89,7 @@ import ParentTimeTable         from "./parents/pages/Timetable";
 
 // ── Finance roles ───────────────────────────────────────────────────────────
 import AccountantDashboard     from "./accountant/pages/AccountantDashboard";
-import CashierDashboard        from "./cashier/pages/CashierDashboard";
+// import CashierDashboard        from "./cashier/pages/CashierDashboard";
 
 // ── Transport roles ─────────────────────────────────────────────────────────
 import TransportManagerDashboard from "./transport_manager/pages/TransportManagerDashboard";
@@ -104,6 +104,7 @@ import {
   StaffDashboard,
   ITAdminDashboard,
 } from "./role_dashboards/MinorRoleDashboards";
+import ExpensePage from "./accountant/pages/ExpensePage";
 
 // ── Helper wrapper ───────────────────────────────────────────────────────────
 function TimetableCreatorPage() {
@@ -244,7 +245,7 @@ function App() {
         <Route path="/accountant/dashboard"        element={<ProtectedRoute roles={["ACCOUNTANT"]}><AccountantDashboard /></ProtectedRoute>} />
         <Route path="/accountant/fees"             element={<ProtectedRoute roles={["ACCOUNTANT"]}><FeeManagement /></ProtectedRoute>} />
         <Route path="/accountant/revenue"          element={<ProtectedRoute roles={["ACCOUNTANT"]}><SMS_Revenue /></ProtectedRoute>} />
-        <Route path="/accountant/expenses"         element={<ProtectedRoute roles={["ACCOUNTANT"]}><AccountantDashboard /></ProtectedRoute>} />
+        <Route path="/accountant/expenses"         element={<ProtectedRoute roles={["ACCOUNTANT"]}><ExpensePage /></ProtectedRoute>} />
         <Route path="/accountant/payroll"          element={<ProtectedRoute roles={["ACCOUNTANT"]}><AccountantDashboard /></ProtectedRoute>} />
         <Route path="/accountant/reports"          element={<ProtectedRoute roles={["ACCOUNTANT"]}><AccountantDashboard /></ProtectedRoute>} />
         <Route path="/accountant/my-attendance"    element={<ProtectedRoute roles={["ACCOUNTANT"]}><TeacherAttendance /></ProtectedRoute>} />
@@ -252,10 +253,10 @@ function App() {
         <Route path="/accountant/settings"         element={<ProtectedRoute roles={["ACCOUNTANT"]}><Settings /></ProtectedRoute>} />
 
         {/* ── Cashier ─────────────────────────────────────────────────────── */}
-        <Route path="/cashier/dashboard"          element={<ProtectedRoute roles={["CASHIER"]}><CashierDashboard /></ProtectedRoute>} />
+        {/* <Route path="/cashier/dashboard"          element={<ProtectedRoute roles={["CASHIER"]}><CashierDashboard /></ProtectedRoute>} /> */}
         <Route path="/cashier/collect-fees"       element={<ProtectedRoute roles={["CASHIER"]}><FeeManagement /></ProtectedRoute>} />
-        <Route path="/cashier/receipts"           element={<ProtectedRoute roles={["CASHIER"]}><CashierDashboard /></ProtectedRoute>} />
-        <Route path="/cashier/daily-report"       element={<ProtectedRoute roles={["CASHIER"]}><CashierDashboard /></ProtectedRoute>} />
+        {/* <Route path="/cashier/receipts"           element={<ProtectedRoute roles={["CASHIER"]}><CashierDashboard /></ProtectedRoute>} /> */}
+        {/* <Route path="/cashier/daily-report"       element={<ProtectedRoute roles={["CASHIER"]}><CashierDashboard /></ProtectedRoute>} /> */}
         <Route path="/cashier/my-attendance"      element={<ProtectedRoute roles={["CASHIER"]}><TeacherAttendance /></ProtectedRoute>} />
         <Route path="/cashier/profile-settings"   element={<ProtectedRoute roles={["CASHIER"]}><ProfilePage /></ProtectedRoute>} />
         <Route path="/cashier/settings"           element={<ProtectedRoute roles={["CASHIER"]}><Settings /></ProtectedRoute>} />

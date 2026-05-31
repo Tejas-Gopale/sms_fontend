@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import RoleSidebar from "../../common/components/RoleSidebar";
-import API from "../../common/services/api"; // <--- Tumhari central API.js ka path yahan check kar lena ek baar bhai
+import API from "../../common/services/api"; 
 import { getUserData } from "../../common/utils/tokenStorage";
 import {
   IndianRupee, TrendingUp, TrendingDown, Receipt,
@@ -119,7 +119,7 @@ export default function AccountantDashboard() {
       const data = await fetchStats(schoolId);
       setStats(data);
     } catch (err) {
-      setErrorStats("Stats load nahi ho sake.");
+      setErrorStats("Stats load nahi ho sake." , err);
     } finally {
       setLoadingStats(false);
     }
@@ -133,7 +133,7 @@ export default function AccountantDashboard() {
       const data = await fetchRecentTransactions(schoolId, 10);
       setTransactions(Array.isArray(data) ? data : []);
     } catch (err) {
-      setErrorTxns("Transactions load nahi ho sake.");
+      setErrorTxns("Transactions load nahi ho sake." , err);
     } finally {
       setLoadingTxns(false);
     }
