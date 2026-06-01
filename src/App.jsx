@@ -170,7 +170,7 @@ function App() {
         <Route path="/school-admin/alumni"           element={<ProtectedRoute roles={ADMIN_ROLES}><AlumniManagement /></ProtectedRoute>} />
         <Route path="/school-admin/profile-settings" element={<ProtectedRoute roles={ADMIN_ROLES}><ProfilePage /></ProtectedRoute>} />
         <Route path="/school-admin/settings"         element={<ProtectedRoute roles={ADMIN_ROLES}><Settings /></ProtectedRoute>} />
-
+        <Route path="/super-admin/my-attendance"     element={<ProtectedRoute roles={ADMIN_ROLES}><TeacherAttendance /></ProtectedRoute>} />
         {/* ── Principal & Vice Principal ───────────────────────────────────── */}
         <Route path="/principal/dashboard"        element={<ProtectedRoute roles={PRINCIPAL_ROLES}><PrincipalDashboard /></ProtectedRoute>} />
         <Route path="/principal/students"         element={<ProtectedRoute roles={PRINCIPAL_ROLES}><Students /></ProtectedRoute>} />

@@ -72,6 +72,7 @@ export const ROLE_MENU = {
     {
       group: "System",
       items: [
+        { name: "My Attendance", icon: "CalendarDays", path: "/super-admin/my-attendance" },
         { name: "Settings", icon: "Settings", path: "/super-admin/settings" },
       ],
     },
@@ -107,7 +108,8 @@ export const ROLE_MENU = {
         { name: "Admission Management",  icon: "UserCircle",      path: "/school-admin/admissions" },
         { name: "Event Management",      icon: "CalendarDays",    path: "/school-admin/events" },
       ],
-    },
+    },            
+
     {
       group: "Academic & Learning",
       items: [
@@ -132,8 +134,8 @@ export const ROLE_MENU = {
         { name: "Library",    icon: "Library",  path: "/school-admin/library" },
         { name: "Transport",  icon: "Bus",      path: "/school-admin/transport" },
         { name: "Hostel",     icon: "Home",     path: "/school-admin/hostel" },
-        { name: "Inventory",  icon: "Package",  path: "/school-admin/inventory" },
-        { name: "Health",     icon: "HeartPulse",path: "/school-admin/health" },
+        // { name: "Inventory",  icon: "Package",  path: "/school-admin/inventory" },
+        // { name: "Health",     icon: "HeartPulse",path: "/school-admin/health" },
       ],
     },
     {
@@ -141,6 +143,7 @@ export const ROLE_MENU = {
       items: [
         { name: "Profile",   icon: "UserCircle", path: "/school-admin/profile-settings" },
         { name: "Settings",  icon: "Settings",   path: "/school-admin/settings" },
+        { name: "My Attendance", icon: "CalendarDays", path: "/super-admin/my-attendance" },
       ],
     },
   ],
@@ -272,6 +275,7 @@ export const ROLE_MENU = {
         { name: "My Attendance", icon: "CalendarDays", path: "/counselor/my-attendance" },
         { name: "Profile",       icon: "UserCircle",   path: "/counselor/profile-settings" },
         { name: "Settings",      icon: "Settings",      path: "/counselor/settings" },
+        
       ],
     },
   ],
