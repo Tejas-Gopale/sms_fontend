@@ -199,7 +199,7 @@ function App() {
         <Route path="/teacher/leave"             element={<ProtectedRoute roles={TEACHER_ROLES}><TeacherLeave /></ProtectedRoute>} />
         <Route path="/teacher/gps-attendance"    element={<ProtectedRoute roles={TEACHER_ROLES}><TeacherGpsAttendance /></ProtectedRoute>} />
         <Route path="/teacher/profile-settings"  element={<ProtectedRoute roles={TEACHER_ROLES}><ProfilePage /></ProtectedRoute>} />
-
+        <Route path= "/teacher/classroom-students" element={<ProtectedRoute roles={TEACHER_ROLES}><ClassTeacher_Students /></ProtectedRoute>} />
         {/* ── Class Teacher exclusive ──────────────────────────────────────── */}
         <Route path="/teacher/my-class"          element={<ProtectedRoute roles={["CLASS_TEACHER"]}><ClassTeacher_Students /></ProtectedRoute>} />
         <Route path="/teacher/class/students"    element={<ProtectedRoute roles={["CLASS_TEACHER"]}><ClassTeacher_Students /></ProtectedRoute>} />

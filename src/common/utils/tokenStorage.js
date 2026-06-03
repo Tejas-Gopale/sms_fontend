@@ -30,6 +30,7 @@ export const getRefreshToken = () => localStorage.getItem(REFRESH_TOKEN);
 
 export const getUserData = () => {
   const user = localStorage.getItem(USER_DATA);
+  console.log("Retrieving User Data:", user);
   return user ? JSON.parse(user) : null;
 };
 

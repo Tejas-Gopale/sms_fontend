@@ -188,19 +188,23 @@ export const ROLE_MENU = {
     {
       group: "Overview",
       items: [
+        // 1
         { name: "Dashboard", icon: "LayoutDashboard", path: "/teachers/dashboard" },
       ],
     },
     {
       group: "Attendance",
       items: [
+        //4
         { name: "Take Attendance",  icon: "ClipboardCheck", path: "/teacher/attendance" },
         { name: "My Attendance",    icon: "CalendarDays",   path: "/teacher/my-attendance" },
+        {name : "ClassRomm Students" ,icon: "Users", path: "/teacher/classroom-students"}
       ],
     },
     {
       group: "Academics",
       items: [
+        //8
         { name: "Assign Homework",   icon: "BookOpen",     path: "/teacher/assign-homework" },
         { name: "Exams & Tests",     icon: "ClipboardList",path: "/teacher/exams_and_tests" },
         { name: "Student Remarks",   icon: "MessageSquare",path: "/teacher/remarks" },
@@ -210,6 +214,7 @@ export const ROLE_MENU = {
     {
       group: "Personal",
       items: [
+        // 12
         { name: "My Salary",      icon: "IndianRupee", path: "/teacher/salary" },
         { name: "Notifications",  icon: "Bell",        path: "/teacher/notifications" },
         { name: "Profile",        icon: "UserCircle",  path: "/teacher/profile-settings" },
