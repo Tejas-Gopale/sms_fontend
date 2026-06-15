@@ -1,11 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { X, Edit2, Save, Hash, Calendar, BookOpen, DollarSign } from "lucide-react";
+import { X, Edit2, Save, Hash, Calendar, BookOpen, DollarSign, Camera, Loader2 } from "lucide-react";
 import API from "../../common/services/api";
+import profileService from "../../common/services/profileService";
 
 export default function TeacherProfileModal({ teacher, onClose, onRefresh }) {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState(teacher?.profilePhotoUrl || null);
+  const fileInputRef = useRef();
 
   const [formData, setFormData] = useState({
     qualification: "",
@@ -24,6 +28,7 @@ export default function TeacherProfileModal({ teacher, onClose, onRefresh }) {
         salary:                teacher.salary || "",
         employeeId:            teacher.employeeId || "",
       });
+      setPhotoUrl(teacher.profilePhotoUrl || null);
     }
   }, [teacher]);
 
@@ -33,13 +38,9 @@ export default function TeacherProfileModal({ teacher, onClose, onRefresh }) {
   const handleUpdate = async () => {
     setLoading(true);
     try {
-      // Sirf filled fields bhejo
       const payload = Object.fromEntries(
         Object.entries(formData).filter(([_, v]) => v !== "" && v !== null)
       );
-
-        console.log("Sending payload:", payload);  // 👈 yeh add karo
-      console.log("Teacher ID:", teacher.id);     // 👈 aur yeh
       await API.patch(`/teacher/update-teacher/${teacher.id}`, payload);
       alert("Teacher Updated ✅");
       setIsEditing(false);
@@ -49,6 +50,23 @@ export default function TeacherProfileModal({ teacher, onClose, onRefresh }) {
       alert("Error updating teacher ❌");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ── Cloudinary photo upload ─────────────────────────────────────
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setPhotoUploading(true);
+    try {
+      const { data } = await profileService.uploadTeacherPhoto(teacher.id, file);
+      setPhotoUrl(data.url);
+      onRefresh(); // reflect new photo in the list
+    } catch (err) {
+      console.error(err);
+      alert(err?.response?.data?.message || "Photo upload failed ❌");
+    } finally {
+      setPhotoUploading(false);
     }
   };
 
@@ -72,9 +90,39 @@ export default function TeacherProfileModal({ teacher, onClose, onRefresh }) {
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-slate-50/50">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-xl">
-              {initials}
+            {/* Avatar with Cloudinary upload */}
+            <div className="relative">
+              {photoUploading ? (
+                <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center">
+                  <Loader2 size={22} className="animate-spin text-indigo-500" />
+                </div>
+              ) : photoUrl ? (
+                <img
+                  src={photoUrl}
+                  alt={teacher?.userName || teacher?.fullName}
+                  className="w-14 h-14 rounded-full object-cover border-2 border-indigo-100"
+                />
+              ) : (
+                <div className="w-14 h-14 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-xl">
+                  {initials}
+                </div>
+              )}
+              <button
+                onClick={() => fileInputRef.current.click()}
+                title="Change photo"
+                className="absolute -bottom-1 -right-1 w-6 h-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full flex items-center justify-center shadow transition-all"
+              >
+                <Camera size={12} />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handlePhotoChange}
+              />
             </div>
+
             <div>
               <h3 className="text-2xl font-bold text-slate-800">
                 {teacher?.userName || teacher?.fullName}
@@ -187,7 +235,6 @@ export default function TeacherProfileModal({ teacher, onClose, onRefresh }) {
                 />
               </div>
             </div>
-
           </div>
         </div>
       </motion.div>

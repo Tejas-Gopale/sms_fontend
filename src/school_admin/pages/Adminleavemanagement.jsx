@@ -1,11 +1,3 @@
-// src/school_admin/pages/AdminLeaveManagement.jsx
-// Admin Leave Management — 4 tabs:
-//   1. Pending Approvals  (approve / reject)
-//   2. Leave Policies     (create / edit per EmployeeCategory × LeaveType)
-//   3. Init Balances      (run once per year OR for a new teacher)
-//   4. All Leave History  (search by teacher)
-//
-// Backend endpoints verified from LeaveController.java + LeavePolicyController.java
 
 import { useState, useEffect, useCallback } from "react";
 import SchoolAdminSidebar from "../components/SchoolAdminSidebar";
