@@ -244,7 +244,7 @@ function App() {
         {/* ── Accountant ──────────────────────────────────────────────────── */}
         <Route path="/accountant/dashboard"        element={<ProtectedRoute roles={["ACCOUNTANT"]}><AccountantDashboard /></ProtectedRoute>} />
         <Route path="/accountant/fees"             element={<ProtectedRoute roles={["ACCOUNTANT"]}><FeeManagement /></ProtectedRoute>} />
-        <Route path="/accountant/revenue"          element={<ProtectedRoute roles={["ACCOUNTANT"]}><SMS_Revenue /></ProtectedRoute>} />
+        {/* <Route path="/accountant/revenue"          element={<ProtectedRoute roles={["ACCOUNTANT"]}><SMS_Revenue /></ProtectedRoute>} /> */}
         <Route path="/accountant/expenses"         element={<ProtectedRoute roles={["ACCOUNTANT"]}><ExpensePage /></ProtectedRoute>} />
         <Route path="/accountant/payroll"          element={<ProtectedRoute roles={["ACCOUNTANT"]}><AccountantDashboard /></ProtectedRoute>} />
         <Route path="/accountant/reports"          element={<ProtectedRoute roles={["ACCOUNTANT"]}><AccountantDashboard /></ProtectedRoute>} />
