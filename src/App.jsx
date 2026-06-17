@@ -49,6 +49,8 @@ import EventManagement         from "./school_admin/pages/EventManagement";
 import AlumniManagement        from "./school_admin/pages/AlumniManagement";
 import AdminLeaveManagement    from "./school_admin/pages/Adminleavemanagement";
 import TimetableCreator        from "./school_admin/components/TimetableCreator";
+import Results                 from "./school_admin/pages/Results";
+import IdentityCard            from "./school_admin/pages/IdentityCard";
 
 // ── Principal ───────────────────────────────────────────────────────────────
 import PrincipalDashboard      from "./principal/pages/PrincipalDashboard";
@@ -168,6 +170,8 @@ function App() {
         <Route path="/school-admin/hostel"           element={<ProtectedRoute roles={ADMIN_ROLES}><HostelManagement /></ProtectedRoute>} />
         <Route path="/school-admin/leave-management" element={<ProtectedRoute roles={ADMIN_ROLES}><AdminLeaveManagement /></ProtectedRoute>} />
         <Route path="/school-admin/alumni"           element={<ProtectedRoute roles={ADMIN_ROLES}><AlumniManagement /></ProtectedRoute>} />
+        <Route path="/school-admin/results"          element={<ProtectedRoute roles={ADMIN_ROLES}><Results /></ProtectedRoute>} />
+        <Route path="/school-admin/identity-card"    element={<ProtectedRoute roles={ADMIN_ROLES}><IdentityCard /></ProtectedRoute>} />
         <Route path="/school-admin/profile-settings" element={<ProtectedRoute roles={ADMIN_ROLES}><ProfilePage /></ProtectedRoute>} />
         <Route path="/school-admin/settings"         element={<ProtectedRoute roles={ADMIN_ROLES}><Settings /></ProtectedRoute>} />
         <Route path="/super-admin/my-attendance"     element={<ProtectedRoute roles={ADMIN_ROLES}><TeacherAttendance /></ProtectedRoute>} />
@@ -244,7 +248,7 @@ function App() {
         {/* ── Accountant ──────────────────────────────────────────────────── */}
         <Route path="/accountant/dashboard"        element={<ProtectedRoute roles={["ACCOUNTANT"]}><AccountantDashboard /></ProtectedRoute>} />
         <Route path="/accountant/fees"             element={<ProtectedRoute roles={["ACCOUNTANT"]}><FeeManagement /></ProtectedRoute>} />
-        {/* <Route path="/accountant/revenue"          element={<ProtectedRoute roles={["ACCOUNTANT"]}><SMS_Revenue /></ProtectedRoute>} /> */}
+        <Route path="/accountant/revenue"          element={<ProtectedRoute roles={["ACCOUNTANT"]}><SMS_Revenue /></ProtectedRoute>} />
         <Route path="/accountant/expenses"         element={<ProtectedRoute roles={["ACCOUNTANT"]}><ExpensePage /></ProtectedRoute>} />
         <Route path="/accountant/payroll"          element={<ProtectedRoute roles={["ACCOUNTANT"]}><AccountantDashboard /></ProtectedRoute>} />
         <Route path="/accountant/reports"          element={<ProtectedRoute roles={["ACCOUNTANT"]}><AccountantDashboard /></ProtectedRoute>} />

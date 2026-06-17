@@ -113,11 +113,12 @@ export const ROLE_MENU = {
     {
       group: "Academic & Learning",
       items: [
-        { name: "Classes",    icon: "BookOpen",     path: "/school-admin/classes" },
-        { name: "Subjects",   icon: "FileText",     path: "/school-admin/subjects" },
-        { name: "Timetable",  icon: "Clock",        path: "/school-admin/timetable" },
-        { name: "Exams",      icon: "ClipboardList",path: "/school-admin/exams" },
-        // { name: "Results",    icon: "BarChart3",    path: "/school-admin/results" },
+        { name: "Classes",        icon: "BookOpen",     path: "/school-admin/classes" },
+        { name: "Subjects",       icon: "FileText",     path: "/school-admin/subjects" },
+        { name: "Timetable",      icon: "Clock",        path: "/school-admin/timetable" },
+        { name: "Exams",          icon: "ClipboardList",path: "/school-admin/exams" },
+        { name: "Results",        icon: "BarChart3",    path: "/school-admin/results" },
+        { name: "Identity Cards", icon: "CreditCard",   path: "/school-admin/identity-card" },
       ],
     },
     {
@@ -357,7 +358,7 @@ export const ROLE_MENU = {
       items: [
         { name: "Dashboard",       icon: "LayoutDashboard", path: "/accountant/dashboard" },
         { name: "Fee Management",  icon: "IndianRupee",     path: "/accountant/fees" },
-        // { name: "Revenue",         icon: "TrendingUp",      path: "/accountant/revenue" },
+        { name: "Revenue",         icon: "TrendingUp",      path: "/accountant/revenue" },
         { name: "Expenses",        icon: "Receipt",         path: "/accountant/expenses" },
         { name: "Salary Payroll",  icon: "Banknote",        path: "/accountant/payroll" },
         { name: "Reports",         icon: "FileText",        path: "/accountant/reports" },
