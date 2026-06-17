@@ -1,47 +1,51 @@
 // src/parents/pages/ParentFees.jsx
 // ─────────────────────────────────────────────────────────────────────────────
-// FIXES:
-//  1. loadReceipts → uses feeReceiptService.getByStudent() instead of getForParent()
-//     - getByStudent returns Page<FeeReceiptResponse> with FULL details
-//       (school name, logo, student info, lineItems) in ONE call
-//     - getForParent returned FeeReceiptSummaryResponse[] — no school details,
-//       no lineItems, modal could never render properly
+// Single API:  GET /parent/fees/{studentId}
+//   → StudentFeesResponse  (feeTerms[] + paymentHistory[] + upiId + schoolId)
 //
-//  2. openReceipt → just sets modal from existing list data (no second API call)
-//     - Previously called getByReceiptNumber() which hit FeeReceiptController
-//       with the (Long) auth.getDetails() bug → ClassCastException → 500
-//
-//  3. Development fix → clear warning when studentId is null from localStorage
-//
-// APIs:
-//   GET /parent/fees/{studentId}          → StudentFeesResponse   (Tab 1 summary)
-//   GET /fee-receipt/student/{studentId}  → Page<FeeReceiptResponse> (Tab 2 receipts)
-//   GET /fee-receipt/{id}/html            → print HTML  (Print button)
+// Tabs:
+//   1. Fee Summary  — stat cards + fee breakdown + Payment section (UPI QR + Razorpay)
+//   2. My Receipts  — receipt list from paymentHistory + View/Download modal
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import ParentSidebar from "../components/ParentSidebar";
 import FeeReceiptTemplate from "../components/FeeReceiptTemplate";
-import feeReceiptService from "../../common/services/feeReceiptService";
+import useParentStudent from "../../common/hooks/useParentStudent";
 import API from "../../common/services/api";
 import {
-  IndianRupee, ReceiptText, RefreshCcw, Eye,
-  Printer, AlertCircle,
+  IndianRupee, ReceiptText, RefreshCcw, Eye, Printer,
+  Loader2, AlertCircle, CheckCircle, Clock, Copy,
+  CreditCard, QrCode, X,
 } from "lucide-react";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
+const fmtNum = (n) => (n ?? 0).toLocaleString("en-IN");
 const fmt = (n) =>
   n != null
     ? new Intl.NumberFormat("en-IN", {
         style: "currency", currency: "INR", minimumFractionDigits: 2,
       }).format(n)
     : "—";
-
 const fmtDate = (s) => {
   if (!s) return "—";
   const d = new Date(s);
   return isNaN(d) ? s : d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 };
+
+// ── Razorpay script loader ────────────────────────────────────────────────────
+function loadRazorpayScript() {
+  return new Promise((resolve) => {
+    if (window.Razorpay) { resolve(true); return; }
+    if (document.getElementById("razorpay-script")) { resolve(true); return; }
+    const s = document.createElement("script");
+    s.id      = "razorpay-script";
+    s.src     = "https://checkout.razorpay.com/v1/checkout.js";
+    s.onload  = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.body.appendChild(s);
+  });
+}
 
 // ── shared styles ─────────────────────────────────────────────────────────────
 const S = {
@@ -58,20 +62,23 @@ const S = {
     padding: "10px 14px", textAlign: "left", fontWeight: 700,
     color: "#fff", fontSize: 12, background: "#1e3a5f",
   },
-  td: { padding: "11px 14px", fontSize: 13, borderBottom: "1px solid #f8fafc" },
+  td:    { padding: "11px 14px", fontSize: 13, borderBottom: "1px solid #f8fafc" },
+  input: {
+    width: "100%", border: "1px solid #e2e8f0", borderRadius: 10,
+    padding: "10px 14px", fontSize: 13, outline: "none",
+    boxSizing: "border-box", fontFamily: "inherit",
+  },
 };
 
+// ── sub-components ────────────────────────────────────────────────────────────
 function Toast({ msg, ok }) {
   return (
     <div style={{
-      position: "fixed", top: 20, right: 24,
-      background: ok ? "#059669" : "#dc2626",
-      color: "#fff", padding: "12px 22px", borderRadius: 10,
-      fontWeight: 600, zIndex: 9999,
+      position: "fixed", top: 20, right: 24, zIndex: 9999,
+      background: ok ? "#059669" : "#dc2626", color: "#fff",
+      padding: "12px 22px", borderRadius: 10, fontWeight: 600,
       boxShadow: "0 4px 20px rgba(0,0,0,0.2)", fontSize: 13,
-    }}>
-      {msg}
-    </div>
+    }}>{msg}</div>
   );
 }
 
@@ -80,9 +87,7 @@ function Stat({ label, value, bg, color, icon }) {
     <div style={{ background: bg, borderRadius: 12, padding: "16px 20px", flex: 1, minWidth: 140 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
         <span style={{ fontSize: 18 }}>{icon}</span>
-        <span style={{ fontSize: 12, color: "#64748b", fontWeight: 600, textTransform: "uppercase" }}>
-          {label}
-        </span>
+        <span style={{ fontSize: 12, color: "#64748b", fontWeight: 600, textTransform: "uppercase" }}>{label}</span>
       </div>
       <div style={{ fontSize: 22, fontWeight: 900, color }}>{value}</div>
     </div>
@@ -91,33 +96,37 @@ function Stat({ label, value, bg, color, icon }) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 export default function ParentFees() {
-  const studentId =
-    localStorage.getItem("linkedStudentId") ||
-    localStorage.getItem("studentId");
+  const { studentId, loading: sidLoading, error: sidError } = useParentStudent();
 
-  const [tab, setTab]         = useState("summary");
-  const [toast, setToast]     = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  // Tab 1 — fee summary
+  const [tab,        setTab]        = useState("summary");
+  const [toast,      setToast]      = useState(null);
+  const [loading,    setLoading]    = useState(false);
   const [feeSummary, setFeeSummary] = useState(null);
-
-  // Tab 2 — full receipts (FeeReceiptResponse[])
-  const [receipts, setReceipts]   = useState([]);
-  const [rcLoading, setRcLoading] = useState(false);
-
-  // Modal — just a pointer to an item from `receipts`, no extra API call
   const [modalReceipt, setModalReceipt] = useState(null);
 
-  const notify = (msg, ok = true) => {
-    setToast({ msg, ok });
+  // Payment inline messages
+  const [msg,        setMsg]        = useState(null); // { type, text }
+
+  // Razorpay
+  const [paying,     setPaying]     = useState(false);
+  const [rzpAmount,  setRzpAmount]  = useState("");
+
+  // UPI UTR
+  const [showUtr,    setShowUtr]    = useState(false);
+  const [utrNumber,  setUtrNumber]  = useState("");
+  const [utrAmount,  setUtrAmount]  = useState("");
+  const [utrLoading, setUtrLoading] = useState(false);
+
+  const notify = (text, ok = true) => {
+    setToast({ msg: text, ok });
     setTimeout(() => setToast(null), 3500);
   };
 
-  // ── Load fee summary (Tab 1) ───────────────────────────────────────────────
+  // ── Fee summary load ───────────────────────────────────────────────────────
   const loadSummary = async () => {
     if (!studentId) return;
     setLoading(true);
+    setMsg(null);
     try {
       const r = await API.get(`/parent/fees/${studentId}`);
       setFeeSummary(r.data);
@@ -128,56 +137,175 @@ export default function ParentFees() {
     }
   };
 
-  // ── Load receipts (Tab 2) ─────────────────────────────────────────────────
-  // FIX: use getByStudent → returns Page<FeeReceiptResponse>
-  //      Full details included: schoolName, schoolLogoUrl, schoolAddress,
-  //      studentName, admissionNumber, className, lineItems[], etc.
-  //      No second API call needed when user clicks "View".
-  const loadReceipts = async () => {
-    if (!studentId) return;
-    setRcLoading(true);
+  useEffect(() => { loadSummary(); }, [studentId]);
+
+  // ── Razorpay payment ───────────────────────────────────────────────────────
+ const handlePayNow = async () => {
+  setMsg(null);
+  const payAmt = rzpAmount ? Number(rzpAmount) : feeSummary?.remainingAmount;
+ 
+  if (!payAmt || payAmt <= 0) {
+    setMsg({ type: "error", text: "Valid amount enter karo." }); return;
+  }
+  if (payAmt > (feeSummary?.remainingAmount ?? 0) + 0.01) {
+    setMsg({ type: "error", text: `Amount ₹${fmtNum(feeSummary.remainingAmount)} (due) se zyada nahi ho sakta.` }); return;
+  }
+  if (!feeSummary?.schoolId || !feeSummary?.studentFeeId) {
+    setMsg({ type: "error", text: "Page refresh karo — details load nahi hui." }); return;
+  }
+ 
+  setPaying(true);
+  try {
+    const loaded = await loadRazorpayScript();
+    if (!loaded) throw new Error("Razorpay SDK load nahi hua. Internet check karo.");
+ 
+    const { data } = await API.post("/payments/create-order", {
+      schoolId:     feeSummary.schoolId,
+      amount:       payAmt,
+      studentFeeId: feeSummary.studentFeeId,
+    });
+ 
+    const options = {
+      key:         data.keyId,
+      amount:      Math.round(payAmt * 100),
+      currency:    "INR",
+      name:        "School Fees",
+      description: `Fees - ${feeSummary.studentName}`,
+      order_id:    data.orderId,
+      prefill:     { name: feeSummary.studentName },
+      theme:       { color: "#1e3a5f" },
+ 
+      // ✅ FIX: response capture karo — razorpay_payment_id, order_id, signature yahan aate hain
+      handler: async (response) => {
+        try {
+          // Backend ko verify karne bhejo — tabhi DB mein entry hogi
+          await API.post("/payments/verify-payment", {
+            razorpayPaymentId: response.razorpay_payment_id,
+            razorpayOrderId:   response.razorpay_order_id,
+            razorpaySignature: response.razorpay_signature,
+            studentFeeId:      feeSummary.studentFeeId,
+            amount:            payAmt,
+          });
+ 
+          setMsg({ type: "success", text: "Payment successful! 🎉 Fees update ho rahi hai..." });
+          setRzpAmount("");
+          setTimeout(loadSummary, 2000);
+        } catch (verifyErr) {
+          // Payment Razorpay pe ho gayi lekin backend verify fail hua
+          // (rare case — webhook backup ke taur pe catch kar lega)
+          setMsg({
+            type: "error",
+            text: `Payment ho gayi lekin record nahi hua: ${verifyErr.response?.data || verifyErr.message}. School admin se contact karo.`,
+          });
+        } finally {
+          setPaying(false);
+        }
+      },
+ 
+      modal: {
+        ondismiss: () => {
+          setMsg({ type: "info", text: "Payment cancel ho gayi." });
+          setPaying(false);
+        },
+      },
+    };
+ 
+    const rzp = new window.Razorpay(options);
+    rzp.on("payment.failed", (r) => {
+      setMsg({ type: "error", text: `Payment fail: ${r.error.description}` });
+      setPaying(false);
+    });
+    rzp.open();
+ 
+  } catch (err) {
+    setMsg({ type: "error", text: err.response?.data || err.message });
+    setPaying(false);
+  }
+};
+
+  // ── UPI UTR submission ─────────────────────────────────────────────────────
+  const handleUtrSubmit = async () => {
+    setMsg(null);
+    const amt = Number(utrAmount);
+    if (!utrNumber.trim()) { setMsg({ type: "error", text: "UTR / Transaction ID daalo." }); return; }
+    if (!amt || amt <= 0)  { setMsg({ type: "error", text: "Valid amount daalo." }); return; }
+    if (amt > (feeSummary?.remainingAmount ?? 0) + 0.01) {
+      setMsg({ type: "error", text: `Amount ₹${fmtNum(feeSummary.remainingAmount)} se zyada nahi ho sakta.` }); return;
+    }
+    if (!feeSummary?.studentFeeId) { setMsg({ type: "error", text: "Page refresh karo." }); return; }
+
+    setUtrLoading(true);
     try {
-      const r = await feeReceiptService.getByStudent(studentId, 0, 50);
-      // Page<FeeReceiptResponse> → .data.content is the array
-      setReceipts(r.data?.content || []);
-    } catch (e) {
-      notify(e.response?.data?.message || "Receipts load nahi hue", false);
+      await API.post("/payments/record-upi", {
+        studentFeeId: feeSummary.studentFeeId,
+        amount:       amt,
+        utrNumber:    utrNumber.trim().toUpperCase(),
+      });
+      setMsg({
+        type: "success",
+        text: `UTR ${utrNumber.trim().toUpperCase()} record ho gaya ✅  Admin verify karne ke baad fees update hogi.`,
+      });
+      setUtrNumber(""); setUtrAmount(""); setShowUtr(false);
+      setTimeout(loadSummary, 1500);
+    } catch (err) {
+      setMsg({ type: "error", text: err.response?.data || err.message });
     } finally {
-      setRcLoading(false);
+      setUtrLoading(false);
     }
   };
 
-  useEffect(() => { loadSummary(); }, []);
-
-  useEffect(() => {
-    if (tab === "receipts" && receipts.length === 0) loadReceipts();
-  }, [tab]);
-
-  // ── Open modal — rc is already a full FeeReceiptResponse ─────────────────
-  // FIX: no API call here; data is already in the list
-  const openReceipt = (rc) => setModalReceipt(rc);
-
-  // ── Print via backend HTML endpoint ───────────────────────────────────────
-  const printViaBackend = async (rc) => {
-    if (!rc.id) {
-      notify("Receipt ID missing — View button se PDF download karo", false);
-      return;
-    }
-    try {
-      const r = await feeReceiptService.getHtml(rc.id);
-      const win = window.open("", "_blank");
-      win.document.write(r.data);
-      win.document.close();
-    } catch {
-      notify("Print page load nahi hua — View → Download PDF try karo", false);
-    }
+  // ── Receipts constructed from paymentHistory ───────────────────────────────
+  const buildReceipts = () => {
+    if (!feeSummary?.paymentHistory?.length) return [];
+    return feeSummary.paymentHistory.map((ph) => ({
+      id:             ph.id,
+      receiptNumber:  ph.receiptNumber || `PAY-${ph.id}`,
+      issuedAt:       ph.paymentDate,
+      issuedOn:       ph.paymentDate,
+      amountPaid:     ph.amount,
+      balanceDue:     feeSummary.remainingAmount,
+      totalFees:      feeSummary.totalFees,
+      paymentMode:    ph.paymentMode,
+      transactionRef: ph.transactionId,
+      academicYear:   null,
+      studentName:    feeSummary.studentName,
+      admissionNumber: feeSummary.rollNumber?.toString(),
+      className:      feeSummary.className,
+      section:        null,
+      schoolName:     feeSummary.schoolName    || null,
+      schoolAddress:  feeSummary.schoolAddress || null,
+      schoolPhone:    feeSummary.schoolPhone   || null,
+      schoolLogoUrl:  feeSummary.schoolLogoUrl || null,
+      lineItems: (feeSummary.feeTerms || []).map((t) => ({
+        feeName: t.termName,
+        amount:  t.amount,
+        status:  t.status || "PENDING",
+      })),
+    }));
   };
 
-  // ── Derive totals ─────────────────────────────────────────────────────────
-  const feeItems = feeSummary?.feeItems || feeSummary?.items || [];
-  const totalFees = feeSummary?.totalFees   ?? feeSummary?.totalAmount ?? 0;
-  const totalPaid = feeSummary?.amountPaid  ?? feeSummary?.paidAmount  ?? 0;
-  const totalDue  = feeSummary?.balanceDue  ?? feeSummary?.dueAmount   ?? 0;
+  // ── Derived values ─────────────────────────────────────────────────────────
+  const receipts  = buildReceipts();
+  const feeTerms  = feeSummary?.feeTerms || [];
+  const totalFees = feeSummary?.totalFees      ?? 0;
+  const totalPaid = feeSummary?.paidAmount     ?? feeSummary?.amountPaid    ?? 0;
+  const totalDue  = feeSummary?.remainingAmount ?? feeSummary?.dueAmount    ?? 0;
+
+  // UPI QR — no fixed amount so user sets it in the UPI app
+  const upiQrUrl = feeSummary?.upiId
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+        `upi://pay?pa=${feeSummary.upiId}&pn=SchoolFees&cu=INR`
+      )}`
+    : null;
+
+  // Inline message style
+  const msgStyle = (type) => ({
+    padding: "10px 16px", borderRadius: 10, fontSize: 13, fontWeight: 500,
+    marginBottom: 14, border: "1px solid",
+    background: type === "success" ? "#f0fdf4" : type === "error" ? "#fef2f2" : "#eff6ff",
+    color:      type === "success" ? "#059669" : type === "error" ? "#dc2626" : "#1d4ed8",
+    borderColor:type === "success" ? "#bbf7d0" : type === "error" ? "#fecaca" : "#bfdbfe",
+  });
 
   const TABS = [
     { id: "summary",  label: "Fee Summary",  icon: <IndianRupee size={14} /> },
@@ -193,26 +321,38 @@ export default function ParentFees() {
 
       <main style={{ flex: 1, padding: "28px 32px", overflowY: "auto" }}>
 
-        {/* Page header */}
-        <div style={{ marginBottom: 24 }}>
-          <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: "#1e293b" }}>
-            Fee Management
-          </h1>
-          <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 14 }}>
-            Apne bachche ki fees aur receipts yahan dekho
-          </p>
+        {/* Header */}
+        <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: "#1e293b" }}>Fee Management</h1>
+            <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 14 }}>
+              Apne bachche ki fees, payments aur receipts yahan dekho
+            </p>
+          </div>
+          <button onClick={loadSummary} disabled={loading}
+            style={{ ...S.btn("#f8fafc", "#64748b"), padding: "7px 14px", fontSize: 12, marginTop: 4 }}>
+            <RefreshCcw size={12} /> Refresh
+          </button>
         </div>
 
-        {/* No student ID — dev / login issue */}
-        {!studentId && (
+        {/* Hook loading */}
+        {sidLoading && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, color: "#64748b", marginBottom: 20 }}>
+            <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} />
+            <span style={{ fontSize: 13 }}>Student details load ho rahi hain...</span>
+          </div>
+        )}
+
+        {/* Hook error */}
+        {!sidLoading && (sidError || !studentId) && (
           <div style={{
-            background: "#fef2f2", border: "1px solid #fecaca",
-            borderRadius: 10, padding: "14px 18px", marginBottom: 20,
+            background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10,
+            padding: "14px 18px", marginBottom: 20,
             color: "#dc2626", display: "flex", alignItems: "center", gap: 10,
           }}>
             <AlertCircle size={18} />
             <span style={{ fontSize: 13, fontWeight: 600 }}>
-              Student ID nahi mila localStorage mein — logout karke dobara login karein.
+              {sidError || "Student ID nahi mila — logout karke dobara login karein."}
             </span>
           </div>
         )}
@@ -223,9 +363,7 @@ export default function ParentFees() {
             <button key={t.id} onClick={() => setTab(t.id)}
               style={{
                 ...S.btn(tab === t.id ? "#1e3a5f" : "#fff", tab === t.id ? "#fff" : "#475569"),
-                boxShadow: tab === t.id
-                  ? "0 2px 8px rgba(30,58,95,0.35)"
-                  : "0 1px 4px rgba(0,0,0,0.08)",
+                boxShadow: tab === t.id ? "0 2px 8px rgba(30,58,95,0.35)" : "0 1px 4px rgba(0,0,0,0.08)",
               }}>
               {t.icon} {t.label}
             </button>
@@ -256,19 +394,20 @@ export default function ParentFees() {
               }}>
                 <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#1e293b" }}>
                   Fee Breakdown
+                  {feeSummary?.studentName && (
+                    <span style={{ marginLeft: 10, fontSize: 13, color: "#64748b", fontWeight: 400 }}>
+                      — {feeSummary.studentName} ({feeSummary.className})
+                    </span>
+                  )}
                 </h2>
-                <button onClick={loadSummary} disabled={loading}
-                  style={{ ...S.btn("#f8fafc", "#64748b"), padding: "6px 12px", fontSize: 12 }}>
-                  <RefreshCcw size={12} /> Refresh
-                </button>
               </div>
 
-              {loading ? (
+              {loading || sidLoading ? (
                 <div style={{ padding: 52, textAlign: "center", color: "#94a3b8" }}>
-                  <RefreshCcw size={22} style={{ animation: "spin 1s linear infinite" }} />
-                  <p>Loading...</p>
+                  <Loader2 size={22} style={{ animation: "spin 1s linear infinite" }} />
+                  <p style={{ marginTop: 10 }}>Loading...</p>
                 </div>
-              ) : feeItems.length === 0 ? (
+              ) : feeTerms.length === 0 ? (
                 <div style={{ padding: 52, textAlign: "center", color: "#94a3b8" }}>
                   <IndianRupee size={36} color="#e2e8f0" style={{ marginBottom: 10 }} />
                   <p>Koi fee record nahi mila</p>
@@ -277,42 +416,24 @@ export default function ParentFees() {
                 <div style={{ overflowX: "auto" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead>
-                      <tr>
-                        {["Fee Head", "Total Amount", "Paid", "Due", "Status"].map((h) => (
-                          <th key={h} style={S.th}>{h}</th>
-                        ))}
-                      </tr>
+                      <tr>{["Fee Head","Amount","Due Date","Status"].map((h) => <th key={h} style={S.th}>{h}</th>)}</tr>
                     </thead>
                     <tbody>
-                      {feeItems.map((item, i) => {
-                        const status    = item.status || item.feeStatus || "DUE";
-                        const statusBg  = { PAID: "#dcfce7", PARTIAL: "#fef9c3", DUE: "#fee2e2" }[status] ?? "#f1f5f9";
-                        const statusClr = { PAID: "#059669", PARTIAL: "#d97706", DUE: "#dc2626" }[status] ?? "#475569";
+                      {feeTerms.map((item) => {
+                        const s      = (item.status || "PENDING").toUpperCase();
+                        const sBg    = {PAID:"#dcfce7",PARTIAL:"#fef9c3",PENDING:"#fee2e2",DUE:"#fee2e2"}[s] ?? "#f1f5f9";
+                        const sColor = {PAID:"#059669",PARTIAL:"#d97706",PENDING:"#dc2626",DUE:"#dc2626"}[s] ?? "#475569";
                         return (
-                          <tr key={i}
+                          <tr key={item.id}
                             onMouseEnter={(e) => e.currentTarget.style.background = "#f8fafc"}
                             onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                           >
-                            <td style={{ ...S.td, fontWeight: 600, color: "#1e293b" }}>
-                              {item.feeName || item.name || "—"}
-                            </td>
-                            <td style={S.td}>{fmt(item.amount || item.totalAmount)}</td>
-                            <td style={{ ...S.td, color: "#059669", fontWeight: 600 }}>
-                              {fmt(item.paidAmount ?? item.amountPaid)}
-                            </td>
-                            <td style={{
-                              ...S.td, fontWeight: 600,
-                              color: (item.dueAmount ?? item.balanceDue ?? 0) > 0 ? "#dc2626" : "#059669",
-                            }}>
-                              {fmt(item.dueAmount ?? item.balanceDue)}
-                            </td>
+                            <td style={{ ...S.td, fontWeight: 600, color: "#1e293b" }}>{item.termName || "—"}</td>
+                            <td style={{ ...S.td, fontWeight: 600 }}>{fmt(item.amount)}</td>
+                            <td style={{ ...S.td, color: "#64748b" }}>{fmtDate(item.dueDate)}</td>
                             <td style={S.td}>
-                              <span style={{
-                                background: statusBg, color: statusClr,
-                                borderRadius: 6, padding: "3px 10px",
-                                fontWeight: 700, fontSize: 12,
-                              }}>
-                                {status}
+                              <span style={{ background: sBg, color: sColor, borderRadius: 6, padding: "3px 10px", fontWeight: 700, fontSize: 12 }}>
+                                {item.status || "PENDING"}
                               </span>
                             </td>
                           </tr>
@@ -323,18 +444,10 @@ export default function ParentFees() {
                       <tr style={{ background: "#1e3a5f" }}>
                         <td style={{ ...S.td, fontWeight: 800, color: "#fff", borderBottom: "none" }}>TOTAL</td>
                         <td style={{ ...S.td, fontWeight: 800, color: "#fff", borderBottom: "none" }}>{fmt(totalFees)}</td>
-                        <td style={{ ...S.td, fontWeight: 800, color: "#86efac", borderBottom: "none" }}>{fmt(totalPaid)}</td>
-                        <td style={{
-                          ...S.td, fontWeight: 800, borderBottom: "none",
-                          color: totalDue > 0 ? "#fca5a5" : "#86efac",
-                        }}>{fmt(totalDue)}</td>
+                        <td style={{ ...S.td, borderBottom: "none" }} />
                         <td style={{ ...S.td, borderBottom: "none" }}>
-                          <span style={{
-                            background: totalDue > 0 ? "#dc2626" : "#059669",
-                            color: "#fff", borderRadius: 6, padding: "3px 10px",
-                            fontWeight: 700, fontSize: 12,
-                          }}>
-                            {totalDue > 0 ? "PENDING" : "CLEARED"}
+                          <span style={{ background: totalDue > 0 ? "#dc2626" : "#059669", color: "#fff", borderRadius: 6, padding: "3px 10px", fontWeight: 700, fontSize: 12 }}>
+                            {totalDue > 0 ? `Due: ${fmt(totalDue)}` : "CLEARED"}
                           </span>
                         </td>
                       </tr>
@@ -344,7 +457,285 @@ export default function ParentFees() {
               )}
             </div>
 
-            {/* Quick link to receipts tab */}
+            {/* ── Inline payment message ── */}
+            {msg && (
+              <div style={msgStyle(msg.type)}>{msg.text}</div>
+            )}
+
+            {/* ── Payment Section (only when amount due) ── */}
+            {!loading && !sidLoading && totalDue > 0 && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 20 }}>
+
+                {/* ── UPI / QR Card ── */}
+                <div style={{ ...S.card, padding: 24 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                    <QrCode size={18} color="#1e3a5f" />
+                    <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#1e293b" }}>UPI / QR Se Pay Karo</h3>
+                  </div>
+                  <p style={{ margin: "0 0 16px", fontSize: 12, color: "#94a3b8" }}>
+                    PhonePe / GPay / Paytm se scan karo — <strong>app mein khud amount type karo (partial bhi ok)</strong>
+                  </p>
+
+                  {upiQrUrl ? (
+                    <>
+                      {/* QR image */}
+                      <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+                        <img
+                          src={upiQrUrl}
+                          alt="UPI QR"
+                          style={{ width: 176, height: 176, borderRadius: 12, border: "4px solid #eff6ff" }}
+                        />
+                      </div>
+
+                      {/* UPI ID + Copy */}
+                      {feeSummary?.upiId && (
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: "#4f46e5" }}>{feeSummary.upiId}</span>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(feeSummary.upiId);
+                              notify("UPI ID copied! ✓");
+                            }}
+                            style={{
+                              background: "#f1f5f9", border: "1px solid #e2e8f0",
+                              borderRadius: 6, padding: "3px 8px",
+                              cursor: "pointer", fontSize: 11, color: "#64748b",
+                              display: "flex", alignItems: "center", gap: 4,
+                            }}
+                          >
+                            <Copy size={10} /> Copy
+                          </button>
+                        </div>
+                      )}
+
+                      <p style={{
+                        textAlign: "center", fontSize: 11, color: "#d97706",
+                        fontWeight: 600, marginBottom: 16,
+                      }}>
+                        ⚠️ QR scan ke baad UPI app mein manually amount type karo
+                      </p>
+
+                      {/* UTR Entry */}
+                      <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 16 }}>
+                        {!showUtr ? (
+                          <button
+                            onClick={() => { setShowUtr(true); setUtrAmount(String(feeSummary.remainingAmount)); }}
+                            style={{
+                              width: "100%", border: "2px solid #6366f1", color: "#4f46e5",
+                              background: "#fff", borderRadius: 10, padding: "10px 16px",
+                              fontSize: 13, fontWeight: 600, cursor: "pointer",
+                            }}
+                          >
+                            ✅ Pay kar diya? UTR / Transaction ID daalo
+                          </button>
+                        ) : (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                            <p style={{ margin: 0, fontSize: 12, color: "#64748b", fontWeight: 600 }}>
+                              PhonePe / GPay mein payment ke baad UTR ya Transaction ID milta hai
+                            </p>
+                            <input
+                              style={S.input}
+                              type="text"
+                              placeholder="UTR / Transaction ID (e.g. 506123456789)"
+                              value={utrNumber}
+                              onChange={(e) => setUtrNumber(e.target.value)}
+                            />
+                            <div style={{ position: "relative" }}>
+                              <span style={{
+                                position: "absolute", left: 12, top: "50%",
+                                transform: "translateY(-50%)", color: "#94a3b8", fontSize: 13,
+                              }}>₹</span>
+                              <input
+                                style={{ ...S.input, paddingLeft: 28 }}
+                                type="number"
+                                placeholder={`Kitna pay kiya? (max ₹${fmtNum(feeSummary.remainingAmount)})`}
+                                value={utrAmount}
+                                onChange={(e) => setUtrAmount(e.target.value)}
+                                min="1"
+                                max={feeSummary.remainingAmount}
+                              />
+                            </div>
+                            <p style={{ margin: 0, fontSize: 11, color: "#94a3b8" }}>
+                              Due: ₹{fmtNum(feeSummary.remainingAmount)} — partial amount bhi de sakte ho
+                            </p>
+
+                            <div style={{ display: "flex", gap: 8 }}>
+                              <button
+                                onClick={handleUtrSubmit}
+                                disabled={utrLoading}
+                                style={{
+                                  flex: 1, background: "#4f46e5", color: "#fff",
+                                  border: "none", borderRadius: 10, padding: "10px 16px",
+                                  fontSize: 13, fontWeight: 600, cursor: "pointer",
+                                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                                  opacity: utrLoading ? 0.6 : 1,
+                                }}
+                              >
+                                {utrLoading
+                                  ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />Saving...</>
+                                  : <><CheckCircle size={14} />Record Payment</>
+                                }
+                              </button>
+                              <button
+                                onClick={() => { setShowUtr(false); setUtrNumber(""); setUtrAmount(""); }}
+                                style={{
+                                  background: "#f8fafc", color: "#64748b",
+                                  border: "1px solid #e2e8f0", borderRadius: 10,
+                                  padding: "10px 14px", cursor: "pointer", fontSize: 13,
+                                  display: "flex", alignItems: "center", gap: 4,
+                                }}
+                              >
+                                <X size={13} /> Cancel
+                              </button>
+                            </div>
+
+                            {/* Verification note */}
+                            <div style={{
+                              background: "#fffbeb", border: "1px solid #fde68a",
+                              borderRadius: 10, padding: "10px 12px", fontSize: 11, color: "#92400e",
+                            }}>
+                              <p style={{ margin: "0 0 4px", fontWeight: 700 }}>⏳ Verification Process:</p>
+                              <p style={{ margin: "2px 0" }}>1. Tumhara UTR record hoga (status: Pending Verification)</p>
+                              <p style={{ margin: "2px 0" }}>2. School admin bank statement se match karega</p>
+                              <p style={{ margin: "2px 0" }}>3. Approve hone par fees automatically update ho jayegi</p>
+                              <p style={{ margin: "6px 0 0", color: "#a16207" }}>Normally 1–2 working days mein verify hota hai</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <p style={{ textAlign: "center", fontSize: 13, color: "#94a3b8", padding: "24px 0" }}>
+                      School ne UPI ID set nahi ki hai abhi.
+                    </p>
+                  )}
+                </div>
+
+                {/* ── Card / Net Banking (Razorpay) Card ── */}
+                <div style={{ ...S.card, padding: 24 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                    <CreditCard size={18} color="#1e3a5f" />
+                    <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#1e293b" }}>Card / Net Banking</h3>
+                  </div>
+                  <p style={{ margin: "0 0 20px", fontSize: 12, color: "#94a3b8" }}>
+                    Razorpay se — partial amount bhi de sakte ho
+                  </p>
+
+                  <label style={{ fontSize: 12, color: "#64748b", fontWeight: 600, display: "block", marginBottom: 6 }}>
+                    Kitna pay karna hai? (blank chhodo = full ₹{fmtNum(feeSummary?.remainingAmount)})
+                  </label>
+                  <div style={{ position: "relative", marginBottom: 8 }}>
+                    <span style={{
+                      position: "absolute", left: 12, top: "50%",
+                      transform: "translateY(-50%)", color: "#94a3b8", fontSize: 13,
+                    }}>₹</span>
+                    <input
+                      style={{ ...S.input, paddingLeft: 28 }}
+                      type="number"
+                      placeholder={`Max ₹${fmtNum(feeSummary?.remainingAmount)}`}
+                      value={rzpAmount}
+                      onChange={(e) => setRzpAmount(e.target.value)}
+                      min="1"
+                      max={feeSummary?.remainingAmount}
+                    />
+                  </div>
+
+                  {rzpAmount && Number(rzpAmount) < (feeSummary?.remainingAmount ?? 0) && (
+                    <p style={{ margin: "0 0 14px", fontSize: 11, color: "#3b82f6" }}>
+                      Partial payment: ₹{fmtNum(Number(rzpAmount))} —
+                      baki ₹{fmtNum((feeSummary?.remainingAmount ?? 0) - Number(rzpAmount))} baad mein
+                    </p>
+                  )}
+
+                  <button
+                    onClick={handlePayNow}
+                    disabled={paying}
+                    style={{
+                      width: "100%", background: paying ? "#94a3b8" : "#1e3a5f",
+                      color: "#fff", border: "none", borderRadius: 10,
+                      padding: "13px 16px", fontSize: 14, fontWeight: 700,
+                      cursor: paying ? "not-allowed" : "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                      marginBottom: 12,
+                    }}
+                  >
+                    {paying
+                      ? <><Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />Processing...</>
+                      : <><CreditCard size={16} />Pay ₹{rzpAmount ? fmtNum(Number(rzpAmount)) : fmtNum(feeSummary?.remainingAmount)} Now</>
+                    }
+                  </button>
+
+                  {/* Powered by */}
+                  <p style={{ textAlign: "center", fontSize: 11, color: "#94a3b8", margin: 0 }}>
+                    🔒 Secured by Razorpay — Card, UPI, Net Banking, Wallet
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* All cleared message */}
+            {!loading && !sidLoading && totalDue <= 0 && feeSummary && (
+              <div style={{
+                marginTop: 20, background: "#f0fdf4", border: "1px solid #bbf7d0",
+                borderRadius: 12, padding: "20px 24px", textAlign: "center",
+                color: "#059669", fontWeight: 700, fontSize: 15,
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              }}>
+                <CheckCircle size={20} /> Saari fees pay ho chuki hai! Koi balance nahi.
+              </div>
+            )}
+
+            {/* Payment History */}
+            {feeSummary?.paymentHistory?.length > 0 && (
+              <div style={{ ...S.card, marginTop: 20 }}>
+                <div style={{ padding: "14px 20px", borderBottom: "1px solid #f1f5f9" }}>
+                  <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#1e293b" }}>Payment History</h2>
+                </div>
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr>{["Date","Amount","Mode","Ref / Transaction ID","Status"].map((h) => <th key={h} style={S.th}>{h}</th>)}</tr>
+                    </thead>
+                    <tbody>
+                      {feeSummary.paymentHistory.map((ph) => {
+                        const s   = (ph.status || "").toUpperCase();
+                        const bg  = {SUCCESS:"#dcfce7",PENDING_VERIFICATION:"#fef9c3",REJECTED:"#fee2e2"}[s] ?? "#f1f5f9";
+                        const clr = {SUCCESS:"#059669",PENDING_VERIFICATION:"#d97706",REJECTED:"#dc2626"}[s] ?? "#475569";
+                        return (
+                          <tr key={ph.id}
+                            onMouseEnter={(e) => e.currentTarget.style.background = "#f8fafc"}
+                            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                          >
+                            <td style={{ ...S.td, color: "#475569" }}>{fmtDate(ph.paymentDate)}</td>
+                            <td style={{ ...S.td, fontWeight: 700, color: "#059669" }}>{fmt(ph.amount)}</td>
+                            <td style={S.td}>
+                              <span style={{ background: "#eff6ff", color: "#1d4ed8", borderRadius: 6, padding: "2px 8px", fontWeight: 600, fontSize: 12 }}>
+                                {ph.paymentMode || "—"}
+                              </span>
+                            </td>
+                            <td style={{ ...S.td, color: "#64748b", fontSize: 12 }}>{ph.transactionId || "—"}</td>
+                            <td style={S.td}>
+                              <span style={{
+                                background: bg, color: clr,
+                                borderRadius: 6, padding: "3px 10px",
+                                fontWeight: 700, fontSize: 12,
+                                display: "inline-flex", alignItems: "center", gap: 4,
+                              }}>
+                                {s === "SUCCESS" && <CheckCircle size={10} />}
+                                {s === "PENDING_VERIFICATION" && <Clock size={10} />}
+                                {ph.status}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Go to receipts */}
             {!loading && totalPaid > 0 && (
               <div style={{
                 marginTop: 16, background: "#eff6ff", border: "1px solid #bfdbfe",
@@ -352,10 +743,9 @@ export default function ParentFees() {
                 display: "flex", alignItems: "center", justifyContent: "space-between",
               }}>
                 <span style={{ fontSize: 13, color: "#1d4ed8" }}>
-                  💡 Apni payment receipts dekhne ke liye "My Receipts" tab pe jao
+                  💡 Apni payment receipts dekhne/download karne ke liye "My Receipts" tab pe jao
                 </span>
-                <button onClick={() => setTab("receipts")}
-                  style={{ ...S.btn("#1d4ed8"), padding: "6px 14px", fontSize: 12 }}>
+                <button onClick={() => setTab("receipts")} style={{ ...S.btn("#1d4ed8"), padding: "6px 14px", fontSize: 12 }}>
                   View Receipts →
                 </button>
               </div>
@@ -367,24 +757,22 @@ export default function ParentFees() {
         {tab === "receipts" && (
           <div>
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
-              <button onClick={loadReceipts} disabled={rcLoading}
+              <button onClick={loadSummary} disabled={loading}
                 style={{ ...S.btn("#f8fafc", "#64748b"), padding: "7px 14px", fontSize: 12 }}>
-                <RefreshCcw size={12} /> {rcLoading ? "Loading..." : "Refresh"}
+                <RefreshCcw size={12} /> {loading ? "Loading..." : "Refresh"}
               </button>
             </div>
 
-            {rcLoading ? (
+            {loading || sidLoading ? (
               <div style={{ ...S.card, padding: 52, textAlign: "center", color: "#94a3b8" }}>
-                <RefreshCcw size={22} style={{ animation: "spin 1s linear infinite" }} />
-                <p>Receipts load ho rahi hain...</p>
+                <Loader2 size={22} style={{ animation: "spin 1s linear infinite" }} />
+                <p style={{ marginTop: 10 }}>Receipts load ho rahi hain...</p>
               </div>
             ) : receipts.length === 0 ? (
               <div style={{ ...S.card, padding: 52, textAlign: "center", color: "#94a3b8" }}>
                 <ReceiptText size={40} color="#e2e8f0" style={{ marginBottom: 12 }} />
-                <p style={{ margin: 0, fontSize: 14 }}>Koi receipt abhi nahi hai</p>
-                <p style={{ margin: "6px 0 0", fontSize: 12 }}>
-                  Payment ke baad receipt yahan dikhegi
-                </p>
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Koi payment nahi mili abhi</p>
+                <p style={{ margin: "6px 0 0", fontSize: 12 }}>Payment ke baad receipt yahan dikhegi</p>
               </div>
             ) : (
               <div style={S.card}>
@@ -395,7 +783,7 @@ export default function ParentFees() {
                   <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#1e293b" }}>
                     Payment Receipts
                     <span style={{ marginLeft: 8, fontSize: 13, color: "#64748b", fontWeight: 400 }}>
-                      ({receipts.length} receipts)
+                      ({receipts.length} receipt{receipts.length > 1 ? "s" : ""})
                     </span>
                   </h2>
                 </div>
@@ -403,123 +791,71 @@ export default function ParentFees() {
                 <div style={{ overflowX: "auto" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead>
-                      <tr>
-                        {["Receipt No.", "Date", "Student", "Amount Paid", "Balance Due", "Mode", "Year", "Actions"].map((h) => (
-                          <th key={h} style={S.th}>{h}</th>
-                        ))}
-                      </tr>
+                      <tr>{["Receipt No.","Date","Student","Amount Paid","Mode","Actions"].map((h) => <th key={h} style={S.th}>{h}</th>)}</tr>
                     </thead>
                     <tbody>
-                      {receipts.map((rc, i) => {
-                        const isPaid = (rc.balanceDue ?? 0) <= 0;
-                        // FeeReceiptResponse uses issuedAt (LocalDateTime); fallback to issuedOn
-                        const dateVal = rc.issuedAt || rc.issuedOn;
-                        return (
-                          <tr key={rc.id || i}
-                            onMouseEnter={(e) => e.currentTarget.style.background = "#f8fafc"}
-                            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                          >
-                            {/* Receipt number */}
-                            <td style={{ ...S.td, fontWeight: 700, color: "#1e3a5f" }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                <ReceiptText size={13} color="#1e3a5f" />
-                                {rc.receiptNumber}
-                              </div>
-                            </td>
-
-                            {/* Date */}
-                            <td style={{ ...S.td, color: "#475569" }}>
-                              {fmtDate(dateVal)}
-                            </td>
-
-                            {/* Student — available because FeeReceiptResponse is full DTO */}
-                            <td style={S.td}>
-                              <div style={{ fontWeight: 600, color: "#1e293b", fontSize: 13 }}>
-                                {rc.studentName || "—"}
-                              </div>
-                              {rc.admissionNumber && (
-                                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 1 }}>
-                                  {rc.admissionNumber}
-                                </div>
-                              )}
-                            </td>
-
-                            {/* Amount Paid */}
-                            <td style={{ ...S.td, fontWeight: 700, color: "#059669" }}>
-                              {fmt(rc.amountPaid)}
-                            </td>
-
-                            {/* Balance Due */}
-                            <td style={{ ...S.td, fontWeight: 600, color: isPaid ? "#059669" : "#dc2626" }}>
-                              {fmt(rc.balanceDue)}
-                            </td>
-
-                            {/* Payment Mode */}
-                            <td style={S.td}>
-                              <span style={{
-                                background: "#eff6ff", color: "#1d4ed8",
-                                borderRadius: 6, padding: "2px 8px",
-                                fontWeight: 600, fontSize: 12,
-                              }}>
-                                {rc.paymentMode || "—"}
-                              </span>
-                            </td>
-
-                            {/* Academic Year */}
-                            <td style={{ ...S.td, color: "#64748b", fontSize: 12 }}>
-                              {rc.academicYear || "—"}
-                            </td>
-
-                            {/* Actions */}
-                            <td style={S.td}>
-                              <div style={{ display: "flex", gap: 6 }}>
-                                {/* View — opens modal instantly (data already loaded) */}
-                                <button
-                                  onClick={() => openReceipt(rc)}
-                                  title="Receipt modal mein dekho"
-                                  style={{
-                                    background: "#eff6ff", color: "#1d4ed8",
-                                    border: "none", borderRadius: 6,
-                                    padding: "5px 10px", cursor: "pointer",
-                                    display: "flex", alignItems: "center", gap: 4,
-                                    fontSize: 12, fontWeight: 600,
-                                  }}
-                                >
-                                  <Eye size={12} /> View
-                                </button>
-
-                                {/* Print via backend HTML endpoint */}
-                                <button
-                                  onClick={() => printViaBackend(rc)}
-                                  title="Print-ready page kholo"
-                                  style={{
-                                    background: "#f0fdf4", color: "#059669",
-                                    border: "none", borderRadius: 6,
-                                    padding: "5px 10px", cursor: "pointer",
-                                    display: "flex", alignItems: "center", gap: 4,
-                                    fontSize: 12, fontWeight: 600,
-                                  }}
-                                >
-                                  <Printer size={12} /> Print
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
+                      {receipts.map((rc, i) => (
+                        <tr key={rc.id || i}
+                          onMouseEnter={(e) => e.currentTarget.style.background = "#f8fafc"}
+                          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                        >
+                          <td style={{ ...S.td, fontWeight: 700, color: "#1e3a5f" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                              <ReceiptText size={13} color="#1e3a5f" />
+                              {rc.receiptNumber}
+                            </div>
+                          </td>
+                          <td style={{ ...S.td, color: "#475569" }}>{fmtDate(rc.issuedAt)}</td>
+                          <td style={S.td}>
+                            <div style={{ fontWeight: 600, color: "#1e293b" }}>{rc.studentName || "—"}</div>
+                            <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 1 }}>
+                              {rc.className}{rc.admissionNumber ? ` · Roll ${rc.admissionNumber}` : ""}
+                            </div>
+                          </td>
+                          <td style={{ ...S.td, fontWeight: 700, color: "#059669" }}>{fmt(rc.amountPaid)}</td>
+                          <td style={S.td}>
+                            <span style={{ background: "#eff6ff", color: "#1d4ed8", borderRadius: 6, padding: "2px 8px", fontWeight: 600, fontSize: 12 }}>
+                              {rc.paymentMode || "—"}
+                            </span>
+                          </td>
+                          <td style={S.td}>
+                            <div style={{ display: "flex", gap: 6 }}>
+                              <button
+                                onClick={() => setModalReceipt(rc)}
+                                style={{
+                                  background: "#eff6ff", color: "#1d4ed8", border: "none",
+                                  borderRadius: 6, padding: "5px 12px", cursor: "pointer",
+                                  display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600,
+                                }}
+                              >
+                                <Eye size={12} /> View
+                              </button>
+                              <button
+                                onClick={() => setModalReceipt(rc)}
+                                style={{
+                                  background: "#f0fdf4", color: "#059669", border: "none",
+                                  borderRadius: 6, padding: "5px 12px", cursor: "pointer",
+                                  display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600,
+                                }}
+                              >
+                                <Printer size={12} /> Print/PDF
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
-              </div>
-            )}
 
-            {receipts.length > 0 && (
-              <div style={{
-                marginTop: 14, background: "#f8fafc", border: "1px solid #e2e8f0",
-                borderRadius: 10, padding: "10px 16px", fontSize: 12, color: "#64748b",
-              }}>
-                💡 <strong>View</strong> — school logo, student details, fee breakdown + PDF download &nbsp;|&nbsp;
-                <strong>Print</strong> — seedha print dialog (PDF save bhi ho sakta hai)
+                <div style={{
+                  padding: "10px 20px", background: "#f8fafc",
+                  borderTop: "1px solid #f1f5f9", fontSize: 12, color: "#64748b",
+                }}>
+                  💡 <strong>View</strong> → receipt modal khulegi &nbsp;|&nbsp;
+                  Modal mein <strong>Download PDF</strong> se save karo &nbsp;|&nbsp;
+                  <strong>Print/PDF</strong> → printer dialog
+                </div>
               </div>
             )}
           </div>
@@ -527,7 +863,7 @@ export default function ParentFees() {
 
       </main>
 
-      {/* ── Receipt Modal — FeeReceiptTemplate renders school name, logo, lineItems etc. ── */}
+      {/* Receipt modal */}
       {modalReceipt && (
         <FeeReceiptTemplate
           receipt={modalReceipt}
@@ -537,439 +873,8 @@ export default function ParentFees() {
 
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        input:focus { outline: none; border-color: #6366f1 !important; box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
       `}</style>
     </div>
   );
 }
-// import { useEffect, useState, useRef } from "react";
-// import ParentSidebar from "../components/ParentSidebar";
-// import {
-//   Loader2, AlertCircle, IndianRupee, CreditCard, QrCode,
-//   CheckCircle, Clock, Copy, RefreshCw
-// } from "lucide-react";
-// import { getStudentFees } from "../../common/services/parentService";
-// import useParentStudent from "../../common/hooks/useParentStudent";
-// import API from "../../common/services/api";
-
-// function loadRazorpayScript() {
-//   return new Promise((resolve) => {
-//     if (window.Razorpay) { resolve(true); return; }
-//     if (document.getElementById("razorpay-script")) { resolve(true); return; }
-//     const s = document.createElement("script");
-//     s.id = "razorpay-script";
-//     s.src = "https://checkout.razorpay.com/v1/checkout.js";
-//     s.onload  = () => resolve(true);
-//     s.onerror = () => resolve(false);
-//     document.body.appendChild(s);
-//   });
-// }
-
-// const fmt = (n) => (n ?? 0).toLocaleString("en-IN");
-
-// const msgCls = (t) =>
-//   t === "success" ? "bg-green-50 border-green-200 text-green-700"
-//   : t === "error"  ? "bg-red-50 border-red-200 text-red-600"
-//   :                  "bg-blue-50 border-blue-200 text-blue-600";
-
-// const statusCls = (s) => {
-//   const v = (s || "").toUpperCase();
-//   if (v === "PAID")                 return "bg-green-100 text-green-700";
-//   if (v === "PARTIAL")              return "bg-blue-100 text-blue-700";
-//   if (v === "OVERDUE")              return "bg-red-100 text-red-600";
-//   if (v === "PENDING_VERIFICATION") return "bg-orange-100 text-orange-700";
-//   if (v === "SUCCESS")              return "bg-green-100 text-green-700";
-//   if (v === "REJECTED")             return "bg-red-100 text-red-600";
-//   return "bg-yellow-100 text-yellow-700";
-// };
-
-// export default function ParentFees() {
-//   const { studentId, loading: sidLoading, error: sidError } = useParentStudent();
-
-//   const [fees,       setFees]       = useState(null);
-//   const [loading,    setLoading]    = useState(false);
-//   const [error,      setError]      = useState(null);
-//   const [msg,        setMsg]        = useState(null);
-
-//   // Razorpay
-//   const [paying,     setPaying]     = useState(false);
-//   const [rzpAmount,  setRzpAmount]  = useState("");
-
-//   // UPI UTR
-//   const [showUtr,    setShowUtr]    = useState(false);
-//   const [utrNumber,  setUtrNumber]  = useState("");
-//   const [utrAmount,  setUtrAmount]  = useState("");
-//   const [utrLoading, setUtrLoading] = useState(false);
-
-//   const printRef = useRef();
-
-//   const loadFees = () => {
-//     if (!studentId) return;
-//     setLoading(true);
-//     getStudentFees(studentId)
-//       .then((res) => setFees(res.data))
-//       .catch(() => setError("Could not load fees data."))
-//       .finally(() => setLoading(false));
-//   };
-
-//   useEffect(() => { loadFees(); }, [studentId]);
-
-//   // ── Razorpay — partial amount support ──────────────────────────────────────
-//   const handlePayNow = async () => {
-//     setMsg(null);
-//     const payAmt = rzpAmount ? Number(rzpAmount) : fees?.remainingAmount;
-
-//     if (!payAmt || payAmt <= 0) {
-//       setMsg({ type: "error", text: "Valid amount enter karo." }); return;
-//     }
-//     if (payAmt > (fees?.remainingAmount ?? 0) + 0.01) {
-//       setMsg({ type: "error", text: `Amount ₹${fmt(fees.remainingAmount)} (due) se zyada nahi ho sakta.` }); return;
-//     }
-//     if (!fees.schoolId || !fees.studentFeeId) {
-//       setMsg({ type: "error", text: "Page refresh karo — details load nahi hui." }); return;
-//     }
-
-//     setPaying(true);
-//     try {
-//       const loaded = await loadRazorpayScript();
-//       if (!loaded) throw new Error("Razorpay SDK load nahi hua. Internet check karo.");
-
-//       const { data } = await API.post("/payments/create-order", {
-//         schoolId:     fees.schoolId,
-//         amount:       payAmt,
-//         studentFeeId: fees.studentFeeId,
-//       });
-
-//       const options = {
-//         key:         data.keyId,
-//         amount:      Math.round(payAmt * 100),
-//         currency:    "INR",
-//         name:        "School Fees",
-//         description: `Fees - ${fees.studentName}`,
-//         order_id:    data.orderId,
-//         prefill:     { name: fees.studentName },
-//         theme:       { color: "#4F46E5" },
-//         handler: () => {
-//           setMsg({ type: "success", text: "Payment successful! 🎉 Fees update ho rahi hai..." });
-//           setRzpAmount("");
-//           setTimeout(loadFees, 2500);
-//           setPaying(false);
-//         },
-//         modal: {
-//           ondismiss: () => { setMsg({ type: "info", text: "Payment cancel." }); setPaying(false); },
-//         },
-//       };
-
-//       const rzp = new window.Razorpay(options);
-//       rzp.on("payment.failed", (r) => {
-//         setMsg({ type: "error", text: `Payment fail: ${r.error.description}` });
-//         setPaying(false);
-//       });
-//       rzp.open();
-//     } catch (err) {
-//       setMsg({ type: "error", text: err.response?.data || err.message });
-//       setPaying(false);
-//     }
-//   };
-
-//   // ── UPI UTR record ─────────────────────────────────────────────────────────
-//   const handleUtrSubmit = async () => {
-//     setMsg(null);
-//     const amt = Number(utrAmount);
-//     if (!utrNumber.trim())           { setMsg({ type: "error", text: "UTR / Transaction ID daalo." }); return; }
-//     if (!amt || amt <= 0)            { setMsg({ type: "error", text: "Valid amount daalo." }); return; }
-//     if (amt > (fees?.remainingAmount ?? 0) + 0.01)
-//       { setMsg({ type: "error", text: `Amount ₹${fmt(fees.remainingAmount)} se zyada nahi ho sakta.` }); return; }
-//     if (!fees?.studentFeeId)         { setMsg({ type: "error", text: "Page refresh karo." }); return; }
-
-//     setUtrLoading(true);
-//     try {
-//       await API.post("/api/payments/record-upi", {
-//         studentFeeId: fees.studentFeeId,
-//         amount:       amt,
-//         utrNumber:    utrNumber.trim().toUpperCase(),
-//       });
-//       setMsg({
-//         type: "success",
-//         text: `UTR ${utrNumber.trim().toUpperCase()} record ho gaya ✅  Admin verify karne ke baad fees ghatti dikhegi.`,
-//       });
-//       setUtrNumber("");
-//       setUtrAmount("");
-//       setShowUtr(false);
-//       setTimeout(loadFees, 1500);
-//     } catch (err) {
-//       setMsg({ type: "error", text: err.response?.data || err.message });
-//     } finally {
-//       setUtrLoading(false);
-//     }
-//   };
-
-//   // QR — NO fixed amount (am= parameter hata diya) so user UPI app mein khud type kare
-//   const upiQrUrl = fees?.upiId
-//     ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
-//         `upi://pay?pa=${fees.upiId}&pn=SchoolFees&cu=INR`
-//       )}`
-//     : null;
-
-//   return (
-//     <div className="flex min-h-screen bg-gray-50">
-//       <ParentSidebar />
-//       <div className="flex-1 p-6 md:p-8">
-
-//         {/* Header */}
-//         <div className="flex items-center justify-between mb-6">
-//           <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-2">
-//             <IndianRupee className="text-green-600" size={28} /> Fees Payment
-//           </h1>
-//           <button onClick={loadFees} className="flex items-center gap-1 text-sm text-slate-500 hover:text-indigo-600">
-//             <RefreshCw size={15} /> Refresh
-//           </button>
-//         </div>
-
-//         {(loading || sidLoading) && (
-//           <div className="flex justify-center mt-20">
-//             <Loader2 className="animate-spin text-indigo-500" size={40} />
-//           </div>
-//         )}
-//         {(error || sidError) && (
-//           <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-5 py-4 text-red-600">
-//             <AlertCircle size={20} />{error || sidError}
-//           </div>
-//         )}
-
-//         {fees && !loading && !sidLoading && (
-//           <>
-//             {/* Summary Cards */}
-//             <div className="grid grid-cols-3 gap-4 mb-6">
-//               <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-//                 <p className="text-xs text-gray-500 mb-1">Total Fees</p>
-//                 <p className="text-xl font-bold text-slate-800">₹{fmt(fees.totalFees)}</p>
-//               </div>
-//               <div className="bg-green-50 p-5 rounded-2xl shadow-sm border border-green-100">
-//                 <p className="text-xs text-gray-500 mb-1">Paid</p>
-//                 <p className="text-xl font-bold text-green-700">₹{fmt(fees.paidAmount)}</p>
-//               </div>
-//               <div className={`p-5 rounded-2xl shadow-sm border ${
-//                 fees.remainingAmount > 0 ? "bg-red-50 border-red-100" : "bg-green-50 border-green-100"
-//               }`}>
-//                 <p className="text-xs text-gray-500 mb-1">Remaining</p>
-//                 <p className={`text-xl font-bold ${fees.remainingAmount > 0 ? "text-red-600" : "text-green-700"}`}>
-//                   ₹{fmt(fees.remainingAmount)}
-//                 </p>
-//               </div>
-//             </div>
-
-//             {/* Global message */}
-//             {msg && (
-//               <div className={`mb-4 px-4 py-3 rounded-xl text-sm font-medium border ${msgCls(msg.type)}`}>
-//                 {msg.text}
-//               </div>
-//             )}
-
-//             {/* Fee Items Table */}
-//             <div ref={printRef} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-6">
-//               <h2 className="text-base font-bold mb-4 text-slate-800">Fee Breakdown</h2>
-//               <table className="w-full text-sm">
-//                 <thead>
-//                   <tr className="border-b bg-slate-50 text-slate-600">
-//                     <th className="p-3 text-left font-semibold">Fee Head</th>
-//                     <th className="p-3 text-left font-semibold">Amount</th>
-//                     <th className="p-3 text-left font-semibold">Due Date</th>
-//                     <th className="p-3 text-left font-semibold">Status</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {fees.feeTerms?.map((f) => (
-//                     <tr key={f.id} className="border-b hover:bg-slate-50">
-//                       <td className="p-3 font-medium">{f.termName}</td>
-//                       <td className="p-3">₹{fmt(f.amount)}</td>
-//                       <td className="p-3 text-slate-500">{f.dueDate ?? "—"}</td>
-//                       <td className="p-3">
-//                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusCls(f.status)}`}>
-//                           {f.status}
-//                         </span>
-//                       </td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//             </div>
-
-//             {fees.remainingAmount > 0 && (
-//               <div className="grid md:grid-cols-2 gap-6 mb-6">
-
-//                 {/* ── UPI / QR Card ──────────────────────────────────────── */}
-//                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-//                   <h2 className="text-base font-bold mb-1 text-slate-800 flex items-center gap-2">
-//                     <QrCode size={18} /> UPI / QR Se Pay Karo
-//                   </h2>
-//                   <p className="text-xs text-gray-400 mb-4">
-//                     PhonePe / GPay / Paytm se scan karo —{" "}
-//                     <strong>app mein khud amount type karo (partial bhi ok)</strong>
-//                   </p>
-
-//                   {upiQrUrl ? (
-//                     <>
-//                       <div className="flex justify-center mb-3">
-//                         <img src={upiQrUrl} alt="UPI QR" className="rounded-xl border-4 border-indigo-50 w-44 h-44" />
-//                       </div>
-//                       {fees.upiId && (
-//                         <div className="flex items-center justify-center gap-2 mb-3">
-//                           <span className="text-sm font-semibold text-indigo-600">{fees.upiId}</span>
-//                           <button
-//                             onClick={() => { navigator.clipboard.writeText(fees.upiId); setMsg({ type: "info", text: "UPI ID copied!" }); }}
-//                             className="text-xs text-gray-400 hover:text-gray-600 border rounded px-2 py-0.5 flex items-center gap-1"
-//                           ><Copy size={11} /> Copy</button>
-//                         </div>
-//                       )}
-//                       <p className="text-xs text-center text-amber-600 font-medium mb-4">
-//                         ⚠️ QR scan ke baad UPI app mein manually amount type karo (koi bhi amount doge toh chalega)
-//                       </p>
-
-//                       {/* UTR Entry */}
-//                       <div className="border-t pt-4">
-//                         {!showUtr ? (
-//                           <button
-//                             onClick={() => { setShowUtr(true); setUtrAmount(String(fees.remainingAmount)); }}
-//                             className="w-full border-2 border-indigo-300 text-indigo-600 py-2.5 rounded-xl text-sm font-medium hover:bg-indigo-50"
-//                           >
-//                             ✅ Pay kar diya? UTR / Transaction ID daalo
-//                           </button>
-//                         ) : (
-//                           <div className="space-y-2">
-//                             <p className="text-xs text-gray-500 font-medium">
-//                               PhonePe / GPay mein payment ke baad UTR ya Transaction ID milta hai
-//                             </p>
-//                             <input
-//                               type="text"
-//                               placeholder="UTR / Transaction ID (e.g. 506123456789)"
-//                               value={utrNumber}
-//                               onChange={(e) => setUtrNumber(e.target.value)}
-//                               className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-//                             />
-//                             <div className="relative">
-//                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
-//                               <input
-//                                 type="number"
-//                                 placeholder="Kitna pay kiya? (partial bhi ok)"
-//                                 value={utrAmount}
-//                                 onChange={(e) => setUtrAmount(e.target.value)}
-//                                 className="w-full border rounded-xl pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-//                                 min="1"
-//                                 max={fees.remainingAmount}
-//                               />
-//                             </div>
-//                             <p className="text-xs text-gray-400">Due: ₹{fmt(fees.remainingAmount)} — partial amount bhi de sakte ho</p>
-
-//                             <div className="flex gap-2">
-//                               <button
-//                                 onClick={handleUtrSubmit}
-//                                 disabled={utrLoading}
-//                                 className="flex-1 bg-indigo-600 text-white py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60 flex items-center justify-center gap-1"
-//                               >
-//                                 {utrLoading
-//                                   ? <><Loader2 size={14} className="animate-spin" />Saving...</>
-//                                   : <><CheckCircle size={14} />Record Payment</>}
-//                               </button>
-//                               <button
-//                                 onClick={() => { setShowUtr(false); setUtrNumber(""); setUtrAmount(""); }}
-//                                 className="px-4 border rounded-xl text-sm text-gray-500 hover:bg-gray-50"
-//                               >Cancel</button>
-//                             </div>
-
-//                             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700">
-//                               <p className="font-semibold mb-1">⏳ Verification Process:</p>
-//                               <p>1. Tumhara UTR record hoga (status: Pending Verification)</p>
-//                               <p>2. School admin bank statement se match karega</p>
-//                               <p>3. Approve hone par fees automatically update ho jayegi</p>
-//                               <p className="mt-1 text-gray-400">Normally 1–2 working days mein verify hota hai</p>
-//                             </div>
-//                           </div>
-//                         )}
-//                       </div>
-//                     </>
-//                   ) : (
-//                     <p className="text-center text-sm text-gray-400 py-8">School ne UPI ID set nahi ki hai abhi.</p>
-//                   )}
-//                 </div>
-
-//                 {/* ── Online Pay Card ────────────────────────────────────── */}
-//                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-//                   <h2 className="text-base font-bold mb-1 text-slate-800 flex items-center gap-2">
-//                     <CreditCard size={18} /> Card / Net Banking
-//                   </h2>
-//                   <p className="text-xs text-gray-400 mb-4">Razorpay se — partial amount bhi de sakte ho</p>
-
-//                   <div className="mb-3">
-//                     <label className="text-xs text-gray-500 font-medium mb-1 block">
-//                       Kitna pay karna hai? (blank chhodo = full ₹{fmt(fees.remainingAmount)})
-//                     </label>
-//                     <div className="relative">
-//                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">₹</span>
-//                       <input
-//                         type="number"
-//                         placeholder={`Max ₹${fmt(fees.remainingAmount)}`}
-//                         value={rzpAmount}
-//                         onChange={(e) => setRzpAmount(e.target.value)}
-//                         className="w-full border rounded-xl pl-7 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-//                         min="1"
-//                         max={fees.remainingAmount}
-//                       />
-//                     </div>
-//                     {rzpAmount && Number(rzpAmount) < fees.remainingAmount && (
-//                       <p className="text-xs text-blue-500 mt-1">
-//                         Partial payment: ₹{fmt(Number(rzpAmount))} — baki ₹{fmt(fees.remainingAmount - Number(rzpAmount))} baad mein
-//                       </p>
-//                     )}
-//                   </div>
-
-//                   <button
-//                     onClick={handlePayNow}
-//                     disabled={paying}
-//                     className="w-full bg-indigo-600 text-white p-3.5 rounded-xl hover:bg-indigo-700 font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 mb-4"
-//                   >
-//                     {paying
-//                       ? <><Loader2 size={16} className="animate-spin" />Processing...</>
-//                       : <><CreditCard size={16} />Pay ₹{rzpAmount ? fmt(Number(rzpAmount)) : fmt(fees.remainingAmount)} Now</>}
-//                   </button>
-
-//                   <button onClick={() => window.print()} className="w-full bg-slate-700 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-black">
-//                     Print Receipt
-//                   </button>
-//                 </div>
-//               </div>
-//             )}
-
-//             {fees.remainingAmount <= 0 && (
-//               <div className="bg-green-50 border border-green-200 rounded-2xl p-6 text-center text-green-700 font-semibold mb-6">
-//                 ✅ Saari fees pay ho chuki hai! Koi balance nahi.
-//               </div>
-//             )}
-
-//             {/* Payment History */}
-//             {fees.paymentHistory?.length > 0 && (
-//               <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-//                 <h2 className="text-base font-bold mb-4 text-slate-800">Payment History</h2>
-//                 <div>
-//                   {fees.paymentHistory.map((ph) => (
-//                     <div key={ph.id} className="flex justify-between items-center py-3 border-b last:border-0">
-//                       <div>
-//                         <p className="font-semibold text-slate-700 text-sm">₹{fmt(ph.amount)}</p>
-//                         <p className="text-xs text-slate-400 mt-0.5">{ph.paymentDate} · {ph.paymentMode}</p>
-//                         {ph.transactionId && <p className="text-xs text-slate-400">Ref: {ph.transactionId}</p>}
-//                       </div>
-//                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusCls(ph.status)}`}>
-//                         {ph.status === "PENDING_VERIFICATION"
-//                           ? <span className="flex items-center gap-1"><Clock size={10} /> Pending</span>
-//                           : ph.status}
-//                       </span>
-//                     </div>
-//                   ))}
-//                 </div>
-//               </div>
-//             )}
-//           </>
-//         )}
-//       </div>
-//     </div>
-//   );
-// }
