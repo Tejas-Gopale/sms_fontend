@@ -10,11 +10,8 @@ import API from "../../common/services/api";
 // 1. DASHBOARD
 // ──────────────────────────────────────────────
 export const teacherDashboardService = {
-  /** GET /teacher/getTeachersDetilasForAdmin */
   getDashboardStats: () => API.get("/teacher/getTeachersDetilasForAdmin"),
-  /** GET /teacher/get_todayslects */
   getTodayLectures: () => API.get("/teacher/get_todayslects"),
-  /** GET /teacher/my-timetable */
   getWeeklyTimetable: () => API.get("/teacher/my-timetable"),
 };
 
@@ -24,13 +21,10 @@ export const teacherDashboardService = {
 export const studentAttendanceService = {
   markAttendance: (classroomId, data) =>
     API.post(`/attendance/${classroomId}/attendance`, data),
-
   correctSingleStudent: (classroomId, studentId, data) =>
     API.post(`/attendance/${classroomId}/student/${studentId}`, data),
-
   getStudentMonthly: (studentId, month, year) =>
     API.get(`/attendance/${studentId}`, { params: { type: "MONTHLY", month, year } }),
-
   getStudentDaily: (studentId, date) =>
     API.get(`/attendance/${studentId}`, { params: { type: "DAILY", date } }),
 };
@@ -38,390 +32,158 @@ export const studentAttendanceService = {
 // ──────────────────────────────────────────────
 // 3. TEACHER SELF ATTENDANCE (GPS-based)
 // ──────────────────────────────────────────────
-// Controller: TeacherGeoAttendanceController
-// Endpoints:
-//   POST /teacher-attendance/mark-self
-//   GET  /teacher-attendance/today-status
-//   GET  /teacher-attendance/today-logs
-// ──────────────────────────────────────────────
 export const teacherSelfAttendanceService = {
-  /**
-   * POST /teacher-attendance/mark-self
-   * 
-   * Multi-punch flow:
-   *   1. First POST → MARKED (logIndex=1)
-   *   2. Subsequent POST → ALREADY_MARKED (logIndex=2,3...)
-   * 
-   * Request: {
-   *   latitude, longitude, accuracyMeters,
-   *   checkInTime (optional), checkOutTime (optional), remarks (optional)
-   * }
-   * 
-   * Response: {
-   *   status: "MARKED" | "ALREADY_MARKED" | "LOCATION_MISMATCH",
-   *   distanceFromSchoolMeters, withinRadius, logIndex,
-   *   checkInTime, message, totalPunchesToday
-   * }
-   */
-  markGpsAttendance: (payload) =>
-    API.post("/teacher-attendance/mark-self", payload),
-
-  /**
-   * GET /teacher-attendance/today-status
-   * 
-   * Returns today's first punch status + all punches list
-   * 
-   * Response: {
-   *   status: "PRESENT" | "LATE" | "NOT_MARKED",
-   *   totalPunchesToday: number,
-   *   checkInTime: "HH:MM:SS",
-   *   todayLogs: [
-   *     { logIndex, checkInTime, checkOutTime, remarks, distanceFromSchoolMeters },
-   *     ...
-   *   ]
-   * }
-   */
-  getTodayStatus: () =>
-    API.get("/teacher-attendance/today-status"),
-
-  /**
-   * GET /teacher-attendance/today-logs
-   * 
-   * Aaj ke saare punch logs as a flat list (raw timeline)
-   * 
-   * Response: AttendanceLogResponse[] = [
-   *   { logIndex, checkInTime, checkOutTime, remarks, distanceFromSchoolMeters, accuracy },
-   *   ...
-   * ]
-   */
-  getTodayLogs: () =>
-    API.get("/teacher-attendance/today-logs"),
-
-  /**
-   * GET /staff-attendance/teacher/{teacherId}/monthly
-   * Monthly attendance records for historical view
-   */
-  getMonthlyRecords: (teacherId, month, year) =>
-    API.get(`/staff-attendance/teacher/${teacherId}/monthly`, { params: { month, year } }),
-
-  /**
-   * GET /staff-attendance/teacher/{teacherId}/summary
-   * Monthly summary: present days, absent days, LOP, etc.
-   */
-  getMonthlySummary: (teacherId, month, year) =>
-    API.get(`/staff-attendance/teacher/${teacherId}/summary`, { params: { month, year } }),
+  markSelfAttendance: (data) => API.post("/teacher-attendance/mark-self", data),
+  getTodayStatus: () => API.get("/teacher-attendance/today-status"),
+  getTodayLogs: () => API.get("/teacher-attendance/today-logs"),
 };
 
 // ──────────────────────────────────────────────
-// 4. LEAVE MANAGEMENT
+// 4. EXAM & TESTS
 // ──────────────────────────────────────────────
-export const teacherLeaveService = {
-  applyLeave: (data) => API.post("/leave/apply", data),
-  cancelLeave: (leaveId, userId) =>
-    API.post(`/leave/${leaveId}/cancel`, null, {
-      params: { requestedByUserId: userId },
-    }),
-  getTeacherHistory: (teacherId) =>
-    API.get(`/leave/history/teacher/${teacherId}`),
-  getTeacherBalance: (teacherId, year) =>
-    API.get(`/leave/balance/teacher/${teacherId}`, { params: { year } }),
+export const examService = {
+  getExams: () => API.get("/teacher/exams"),
+  createExam: (data) => API.post("/teacher/exams", data),
+  updateExam: (id, data) => API.put(`/teacher/exams/${id}`, data),
+  deleteExam: (id) => API.delete(`/teacher/exams/${id}`),
+  getResults: (examId) => API.get(`/teacher/exams/${examId}/results`),
+  submitResults: (examId, data) => API.post(`/teacher/exams/${examId}/results`, data),
 };
 
 // ──────────────────────────────────────────────
-// 5. SALARY / PAYROLL
+// 5. NOTIFICATIONS
 // ──────────────────────────────────────────────
-export const teacherSalaryService = {
-  getSalarySlip: (teacherId, month, year) =>
-    API.get(`/salary-slip/teacher/${teacherId}`, { params: { month, year } }),
-  emailSalarySlip: (slipId) => API.post(`/salary-slip/${slipId}/email`),
+export const teacherNotificationService = {
+  getNotifications: () => API.get("/teacher/notifications"),
+  markRead: (id) => API.put(`/teacher/notifications/${id}/read`),
 };
 
 // ──────────────────────────────────────────────
 // 6. HOMEWORK
 // ──────────────────────────────────────────────
 export const homeworkService = {
+  // ── Create ───────────────────────────────────────────────────────
+
+  /** POST /homework/assign  — text only, auto-sends FCM to parents */
   create: (data) => API.post("/homework/assign", data),
+
+  /**
+   * POST /homework/assign-with-files  — one-shot with attachments.
+   * Max 5 MB per file. Auto-sends FCM push notifications to parents.
+   */
   createWithFiles: (formData) =>
     API.post("/homework/assign-with-files", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
+
+  /**
+   * POST /homework/{homeworkId}/upload-files
+   * Upload additional files to an existing homework.
+   * Max 5 MB per file.
+   */
+  uploadFiles: (homeworkId, formData) =>
+    API.post(`/homework/${homeworkId}/upload-files`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+
+  // ── Read ─────────────────────────────────────────────────────────
+
+  /** GET /homework/by-teacher  — teacher's own homework list */
   getByTeacher: () => API.get("/homework/by-teacher"),
+
+  /** GET /homework/{id}  — single homework with all attachments */
+  getById: (id) => API.get(`/homework/${id}`),
+
+  /** GET /homework/classroom/{classroomId}  — all homework for a class */
+  getByClassroom: (classroomId) => API.get(`/homework/classroom/${classroomId}`),
+
+  /** GET /homework/classroom/{classroomId}/pending */
+  getPendingByClassroom: (classroomId) =>
+    API.get(`/homework/classroom/${classroomId}/pending`),
+
+  // ── Delete ────────────────────────────────────────────────────────
+
+  /** DELETE /homework/{id}  — deletes homework + Cloudinary files */
   delete: (id) => API.delete(`/homework/${id}`),
+
+  /** DELETE /homework/attachment/{attachmentId} */
+  deleteAttachment: (attachmentId) =>
+    API.delete(`/homework/attachment/${attachmentId}`),
+
+  // ── Notification stats ────────────────────────────────────────────
+  //   NEW: track how many parents received / saw / read the notification
+
+  /**
+   * GET /homework/{homeworkId}/notification/stats
+   *
+   * Returns aggregate counts: dispatched, delivered, seen, read + rates.
+   *
+   * @param homeworkId  - the homework to query
+   * @param detail      - if true, includes per-parent rows (seenAt, readAt)
+   *
+   * Response shape:
+   * {
+   *   homeworkId, homeworkTitle, subjectName, grade, section,
+   *   totalDispatched, totalDelivered, totalSeen, totalRead,
+   *   seenRate, readRate,                  ← percentages (0-100)
+   *   recipients?: [                        ← only when detail=true
+   *     { userId, parentId, recipientType, delivered, seen, read,
+   *       sentAt, seenAt, readAt }
+   *   ]
+   * }
+   */
+  getNotificationStats: (homeworkId, detail = false) =>
+    API.get(`/homework/${homeworkId}/notification/stats`, {
+      params: { detail },
+    }),
 };
 
 // ──────────────────────────────────────────────
 // 7. PROFILE
 // ──────────────────────────────────────────────
 export const teacherProfileService = {
-  getProfile: () => API.get("/user/profile"),
-  updateProfile: (data) => API.put("/user/profile", data),
-  changePassword: (data) => API.put("/user/change-password", data),
-  uploadPhoto: (file) => {
-    const fd = new FormData();
-    fd.append("file", file);
-    return API.post("/profile-photo/me", fd, {
+  getProfile: () => API.get("/teacher/profile"),
+  updateProfile: (data) => API.put("/teacher/profile", data),
+  uploadPhoto: (formData) =>
+    API.post("/teacher/profile/photo", formData, {
       headers: { "Content-Type": "multipart/form-data" },
-    });
-  },
-};
-
-// ──────────────────────────────────────────────
-// 8. NOTIFICATIONS
-// ──────────────────────────────────────────────
-export const teacherNotificationService = {
-  getNotices: (page = 0, size = 10) =>
-    API.get("/notice/feed", { params: { audience: "TEACHERS", page, size } }),
-  markAsRead: (id) => API.put(`/notifications/${id}/read`),
-};
-
-// ══════════════════════════════════════════════════════════════════
-// 9. CLASS TEACHER — /teacher-dashboard/* endpoints
-//    Sirf un teachers ke liye jo CLASS_TEACHER role mein hain.
-//    Backend automatically classroom restrict karta hai.
-// ══════════════════════════════════════════════════════════════════
-export const classTeacherService = {
-  getMyClassroom: () =>
-    API.get("/teacher-dashboard/my-classroom"),
-
-  getStudents: (page = 0, size = 20, sortBy = "id", sortDir = "asc") =>
-    API.get("/teacher-dashboard/students", {
-      params: { page, size, sortBy, sortDir },
     }),
-
-  createStudent: (data) =>
-    API.post("/teacher-dashboard/create-student", data),
-
-  assignStudents: (studentIds) =>
-    API.post("/teacher-dashboard/assign-students", { studentIds }),
-
-  finalizeRollNumbers: () =>
-    API.post("/teacher-dashboard/finalize-rolls"),
-
-  getSubjects: () =>
-    API.get("/teacher-dashboard/subjects"),
-
-  addSubject: (data) =>
-    API.post("/teacher-dashboard/subjects", data),
-
-  getClassFees: () =>
-    API.get("/teacher-dashboard/fees"),
-
-  getStudentFees: (studentId) =>
-    API.get(`/teacher-dashboard/fees/student/${studentId}`),
-
-  getFeeHeads: () =>
-    API.get("/teacher-dashboard/fees/heads"),
-
-  getFeeStructure: () =>
-    API.get("/teacher-dashboard/fees/structure"),
 };
-// // src/teachers/services/teacherService.js
-// // ─────────────────────────────────────────────────────────────────
-// // Centralized API service for ALL Teacher module endpoints
-// // Base URL: http://localhost:8085/api/v1  (configured in api.js)
-// // ─────────────────────────────────────────────────────────────────
 
-// import API from "../../common/services/api";
+// ──────────────────────────────────────────────
+// 8. CLASS TEACHER (for users with CLASS_TEACHER role)
+// ──────────────────────────────────────────────
+export const classTeacherService = {
+  /** GET — class teacher's assigned classroom */
+  getMyClassroom: () => API.get("/class-teacher/my-classroom"),
 
-// // ──────────────────────────────────────────────
-// // 1. DASHBOARD
-// // ──────────────────────────────────────────────
-// export const teacherDashboardService = {
-//   /** GET /teacher/getTeachersDetilasForAdmin */
-//   getDashboardStats: () => API.get("/teacher/getTeachersDetilasForAdmin"),
-//   /** GET /teacher/get_todayslects */
-//   getTodayLectures: () => API.get("/teacher/get_todayslects"),
-//   /** GET /teacher/my-timetable */
-//   getWeeklyTimetable: () => API.get("/teacher/my-timetable"),
-// };
+  /** GET — students in their classroom (paginated) */
+  getStudents: (page = 0, size = 10) =>
+    API.get("/class-teacher/students", { params: { page, size } }),
 
-// // ──────────────────────────────────────────────
-// // 2. STUDENT ATTENDANCE
-// // ──────────────────────────────────────────────
-// export const studentAttendanceService = {
-//   markAttendance: (classroomId, data) =>
-//     API.post(`/attendance/${classroomId}/attendance`, data),
+  /** GET — fee records for their classroom */
+  getClassFees: () => API.get("/class-teacher/fees"),
 
-//   correctSingleStudent: (classroomId, studentId, data) =>
-//     API.post(`/attendance/${classroomId}/student/${studentId}`, data),
+  /** GET — subjects assigned to their classroom */
+  getSubjects: () => API.get("/class-teacher/subjects"),
+};
 
-//   getStudentMonthly: (studentId, month, year) =>
-//     API.get(`/attendance/${studentId}`, { params: { type: "MONTHLY", month, year } }),
+// ──────────────────────────────────────────────
+// 9. TEACHER LEAVE MANAGEMENT
+// ──────────────────────────────────────────────
+export const teacherLeaveService = {
+  /** GET — leave balance for a teacher for given year */
+  getTeacherBalance: (teacherId, year) =>
+    API.get(`/leave/balance/${teacherId}`, { params: { year } }),
 
-//   getStudentDaily: (studentId, date) =>
-//     API.get(`/attendance/${studentId}`, { params: { type: "DAILY", date } }),
-// };
+  /** GET — full leave application history for a teacher */
+  getTeacherHistory: (teacherId) =>
+    API.get(`/leave/history/${teacherId}`),
 
-// // ──────────────────────────────────────────────
-// // 3. TEACHER SELF ATTENDANCE (GPS-based)
-// // ──────────────────────────────────────────────
-// export const teacherSelfAttendanceService = {
-//   markGpsAttendance: (payload) =>
-//     API.post("/teacher-attendance/mark-self", payload),
-//   getTodayStatus: () => API.get("/teacher-attendance/today-status"),
-//   getMonthlyRecords: (teacherId, month, year) =>
-//     API.get(`/staff-attendance/teacher/${teacherId}/monthly`, { params: { month, year } }),
-//   getMonthlySummary: (teacherId, month, year) =>
-//     API.get(`/staff-attendance/teacher/${teacherId}/summary`, { params: { month, year } }),
-// };
+  /** POST — apply for leave */
+  applyLeave: (data) => API.post("/leave/apply", data),
 
-// // ──────────────────────────────────────────────
-// // 4. LEAVE MANAGEMENT
-// // ──────────────────────────────────────────────
-// export const teacherLeaveService = {
-//   applyLeave: (data) => API.post("/leave/apply", data),
-//   cancelLeave: (leaveId, userId) =>
-//     API.post(`/leave/${leaveId}/cancel`, null, {
-//       params: { requestedByUserId: userId },
-//     }),
-//   getTeacherHistory: (teacherId) =>
-//     API.get(`/leave/history/teacher/${teacherId}`),
-//   getTeacherBalance: (teacherId, year) =>
-//     API.get(`/leave/balance/teacher/${teacherId}`, { params: { year } }),
-// };
-
-// // ──────────────────────────────────────────────
-// // 5. SALARY / PAYROLL
-// // ──────────────────────────────────────────────
-// export const teacherSalaryService = {
-//   getSalarySlip: (teacherId, month, year) =>
-//     API.get(`/salary-slip/teacher/${teacherId}`, { params: { month, year } }),
-//   emailSalarySlip: (slipId) => API.post(`/salary-slip/${slipId}/email`),
-// };
-
-// // ──────────────────────────────────────────────
-// // 6. HOMEWORK
-// // ──────────────────────────────────────────────
-// export const homeworkService = {
-//   create: (data) => API.post("/homework/assign", data),
-//   createWithFiles: (formData) =>
-//     API.post("/homework/assign-with-files", formData, {
-//       headers: { "Content-Type": "multipart/form-data" },
-//     }),
-//   getByTeacher: () => API.get("/homework/by-teacher"),
-//   delete: (id) => API.delete(`/homework/${id}`),
-// };
-
-// // ──────────────────────────────────────────────
-// // 7. PROFILE
-// // ──────────────────────────────────────────────
-// export const teacherProfileService = {
-//   getProfile: () => API.get("/user/profile"),
-//   updateProfile: (data) => API.put("/user/profile", data),
-//   changePassword: (data) => API.put("/user/change-password", data),
-//   uploadPhoto: (file) => {
-//     const fd = new FormData();
-//     fd.append("file", file);
-//     return API.post("/profile-photo/me", fd, {
-//       headers: { "Content-Type": "multipart/form-data" },
-//     });
-//   },
-// };
-
-// // ──────────────────────────────────────────────
-// // 8. NOTIFICATIONS
-// // ──────────────────────────────────────────────
-// export const teacherNotificationService = {
-//   getNotices: (page = 0, size = 10) =>
-//     API.get("/notice/feed", { params: { audience: "TEACHERS", page, size } }),
-//   markAsRead: (id) => API.put(`/notifications/${id}/read`),
-// };
-
-// // ══════════════════════════════════════════════════════════════════
-// // 9. CLASS TEACHER — /teacher-dashboard/* endpoints
-// //    Sirf un teachers ke liye jo CLASS_TEACHER role mein hain.
-// //    Backend automatically classroom restrict karta hai.
-// // ══════════════════════════════════════════════════════════════════
-// export const classTeacherService = {
-
-//   // ── CLASSROOM ────────────────────────────────────────────────
-
-//   /**
-//    * GET /teacher-dashboard/my-classroom
-//    * Returns: ClassRoom { id, grade, section, subjects[], classTeacher, school }
-//    */
-//   getMyClassroom: () =>
-//     API.get("/teacher-dashboard/my-classroom"),
-
-//   // ── STUDENTS ─────────────────────────────────────────────────
-
-//   /**
-//    * GET /teacher-dashboard/students?page=0&size=20&sortBy=id&sortDir=asc
-//    * Returns: Page<StudentWithParentDTO>
-//    */
-//   getStudents: (page = 0, size = 20, sortBy = "id", sortDir = "asc") =>
-//     API.get("/teacher-dashboard/students", {
-//       params: { page, size, sortBy, sortDir },
-//     }),
-
-//   /**
-//    * POST /teacher-dashboard/create-student
-//    * Body: CreateStudentRequest { firstName, lastName, email, password,
-//    *       admissionNumber, dateOfBirth, gender, rollNumber, section }
-//    * Note: classRoomId is auto-set by backend
-//    */
-//   createStudent: (data) =>
-//     API.post("/teacher-dashboard/create-student", data),
-
-//   /**
-//    * POST /teacher-dashboard/assign-students
-//    * Body: { studentIds: [1, 2, 3] }
-//    * Assigns existing students to class teacher's classroom.
-//    */
-//   assignStudents: (studentIds) =>
-//     API.post("/teacher-dashboard/assign-students", { studentIds }),
-
-//   /**
-//    * POST /teacher-dashboard/finalize-rolls
-//    * Finalizes roll numbers for all students in classroom.
-//    */
-//   finalizeRollNumbers: () =>
-//     API.post("/teacher-dashboard/finalize-rolls"),
-
-//   // ── SUBJECTS ─────────────────────────────────────────────────
-
-//   /**
-//    * GET /teacher-dashboard/subjects
-//    * Returns: Subject[] — subjects assigned to this classroom
-//    */
-//   getSubjects: () =>
-//     API.get("/teacher-dashboard/subjects"),
-
-//   /**
-//    * POST /teacher-dashboard/subjects
-//    * Body: { subjectName: string, teacherId?: number }
-//    * Adds a new subject to class teacher's classroom.
-//    */
-//   addSubject: (data) =>
-//     API.post("/teacher-dashboard/subjects", data),
-
-//   // ── FEES ─────────────────────────────────────────────────────
-
-//   /**
-//    * GET /teacher-dashboard/fees
-//    * Returns: StudentFee[] — all students' fee status in this classroom
-//    */
-//   getClassFees: () =>
-//     API.get("/teacher-dashboard/fees"),
-
-//   /**
-//    * GET /teacher-dashboard/fees/student/{studentId}
-//    * Returns: StudentFee[] — fee detail for one student
-//    */
-//   getStudentFees: (studentId) =>
-//     API.get(`/teacher-dashboard/fees/student/${studentId}`),
-
-//   /**
-//    * GET /teacher-dashboard/fees/heads
-//    * Returns: FeeHead[] — school fee categories (Tuition, Transport, etc.)
-//    */
-//   getFeeHeads: () =>
-//     API.get("/teacher-dashboard/fees/heads"),
-
-//   /**
-//    * GET /teacher-dashboard/fees/structure
-//    * Returns: FeeStructure — fee structure set by admin for this classroom
-//    */
-//   getFeeStructure: () =>
-//     API.get("/teacher-dashboard/fees/structure"),
-// };
+  /** POST/PUT — cancel a pending leave application */
+  cancelLeave: (leaveId, teacherId) =>
+    API.post(`/leave/${leaveId}/cancel`, null, { params: { teacherId } }),
+};
