@@ -64,9 +64,10 @@ export const ROLE_MENU = {
     {
       group: "Finance",
       items: [
-        { name: "Revenue",       icon: "TrendingUp",  path: "/super-admin/revenue" },
-        { name: "Expenses",      icon: "Receipt",     path: "/super-admin/expenses" },
-        { name: "Subscriptions", icon: "CreditCard",  path: "/super-admin/subscriptions" },
+        { name: "Revenue",            icon: "TrendingUp",  path: "/super-admin/revenue" },
+        { name: "Expenses",           icon: "Receipt",     path: "/super-admin/expenses" },
+        { name: "Subscriptions",      icon: "CreditCard",  path: "/super-admin/subscriptions" },
+        { name: "Payroll Scheduler",  icon: "Zap",         path: "/super-admin/payroll-scheduler" },
       ],
     },
     {
@@ -124,9 +125,12 @@ export const ROLE_MENU = {
     {
       group: "Finance & Admin",
       items: [
-        { name: "Fee Management", icon: "IndianRupee", path: "/school-admin/fees" },
-        { name: "Visitors",       icon: "Eye",         path: "/school-admin/visitors" },
-        { name: "Notifications",  icon: "Bell",        path: "/school-admin/notifications" },
+        { name: "Fee Management",    icon: "IndianRupee", path: "/school-admin/fees" },
+        { name: "Payroll",           icon: "Banknote",    path: "/school-admin/payroll" },{ name: "Salary Structures", icon: "Layers", path: "/school-admin/salary-structure" },
+       
+        { name: "Visitors",          icon: "Eye",         path: "/school-admin/visitors" },
+        { name: "Notifications",     icon: "Bell",        path: "/school-admin/notifications" },
+        
       ],
     },
     {
@@ -354,16 +358,18 @@ export const ROLE_MENU = {
 
   ACCOUNTANT: [
     {
-      group: "Finance",
-      items: [
-        { name: "Dashboard",       icon: "LayoutDashboard", path: "/accountant/dashboard" },
-        { name: "Fee Management",  icon: "IndianRupee",     path: "/accountant/fees" },
-        { name: "Revenue",         icon: "TrendingUp",      path: "/accountant/revenue" },
-        { name: "Expenses",        icon: "Receipt",         path: "/accountant/expenses" },
-        { name: "Salary Payroll",  icon: "Banknote",        path: "/accountant/payroll" },
-        { name: "Reports",         icon: "FileText",        path: "/accountant/reports" },
-      ],
-    },
+    
+  group: "Finance",
+  items: [
+    { name: "Dashboard",         icon: "LayoutDashboard", path: "/accountant/dashboard" },
+    { name: "Fee Management",    icon: "IndianRupee",     path: "/accountant/fees" },
+    { name: "Revenue",           icon: "TrendingUp",      path: "/accountant/revenue" },
+    { name: "Expenses",          icon: "Receipt",         path: "/accountant/expenses" },
+    { name: "Salary Payroll",    icon: "Banknote",        path: "/school-admin/payroll" },
+    { name: "Salary Structures", icon: "Layers",          path: "/accountant/salary-structure" }, // ← ADD
+    { name: "Reports",           icon: "FileText",        path: "/accountant/reports" },
+  ],
+},
     {
       group: "Personal",
       items: [
