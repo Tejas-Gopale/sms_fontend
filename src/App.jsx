@@ -13,6 +13,7 @@ import ProtectedRoute          from "./common/routes/ProtectedRoute";
 import LoginPage               from "./common/components/LoginPage";
 import Resetpasswordpage       from "./common/components/Resetpasswordpage";
 import ProfilePage             from "./profile/ProfilePage";
+import BackendFunctions        from "./common/pages/BackendFunctions";
 
 // ── Super Admin ─────────────────────────────────────────────────────────────
 import SuperAdminHome          from "./super_admin/pages/SuperAdminHome";
@@ -122,6 +123,13 @@ function TimetableCreatorPage() {
 const ADMIN_ROLES     = ["SCHOOL_ADMIN"];
 const PRINCIPAL_ROLES = ["PRINCIPAL", "VICE_PRINCIPAL"];
 const TEACHER_ROLES   = ["TEACHER", "CLASS_TEACHER"];
+const ALL_BACKEND_ROLES = [
+  "SUPER_ADMIN", "SCHOOL_OWNER", "SCHOOL_ADMIN", "PRINCIPAL", "VICE_PRINCIPAL",
+  "TEACHER", "CLASS_TEACHER", "COUNSELOR", "STUDENT", "PARENT",
+  "ACCOUNTANT", "CASHIER", "TRANSPORT_MANAGER", "BUS_DRIVER", "BUS_CONDUCTOR",
+  "LIBRARIAN", "RECEPTIONIST", "NURSE", "SECURITY", "HOUSEKEEPING",
+  "CANTEEN_STAFF", "IT_ADMIN",
+];
 
 function App() {
   useFCM();
@@ -134,6 +142,7 @@ function App() {
         <Route path="/"               element={<LoginPage />} />
         <Route path="/login"          element={<LoginPage />} />
         <Route path="/reset-password" element={<Resetpasswordpage />} />
+        <Route path="/backend-functions" element={<ProtectedRoute roles={ALL_BACKEND_ROLES}><BackendFunctions /></ProtectedRoute>} />
 
         {/* ── Super Admin ─────────────────────────────────────────────────── */}
         <Route path="/super-admin/dashboard"     element={<ProtectedRoute roles={["SUPER_ADMIN"]}><SuperAdminHome /></ProtectedRoute>} />

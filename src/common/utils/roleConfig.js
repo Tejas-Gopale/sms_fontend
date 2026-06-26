@@ -590,6 +590,17 @@ export const SIDEBAR_ALIAS = {
   CANTEEN_STAFF:  "CANTEEN_STAFF",
 };
 
+const BACKEND_FUNCTIONS_GROUP = {
+  group: "Backend",
+  items: [
+    { name: "Backend Functions", icon: "Plug", path: "/backend-functions" },
+  ],
+};
+
 export const getMenuForRole = (role) => {
-  return ROLE_MENU[role] || ROLE_MENU["STUDENT"];
+  const menu = ROLE_MENU[role] || ROLE_MENU["STUDENT"];
+  const hasBackendGroup = menu.some((group) =>
+    group.items.some((item) => item.path === BACKEND_FUNCTIONS_GROUP.items[0].path)
+  );
+  return hasBackendGroup ? menu : [...menu, BACKEND_FUNCTIONS_GROUP];
 };
