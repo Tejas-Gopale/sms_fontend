@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { getDashboardRoute } from '../utils/roleConfig';
-import logo from '../../assects/logo.png';
+import ShalaOneLogo from './ShalaOneLogo';
  import './../styles/Login.css';
 
 // ─── Forgot Password View ─────────────────────────────────────────────────────
@@ -154,8 +154,10 @@ export default function LoginPage() {
       {/* ── LEFT PANEL ── */}
       <div className="left-panel">
         <div className="brand-mark">
-          <img src={logo} alt="ShalaOne Logo" className="brand-logo" />
-          <span className="brand-name">ShalaOne</span>
+          <ShalaOneLogo className="brand-logo" />
+          <span className="brand-name">
+            ShalaOne<span className="brand-name-suffix">ERP</span>
+          </span>
         </div>
 
         <div className="hero-text">
