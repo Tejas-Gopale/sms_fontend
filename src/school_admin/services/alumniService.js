@@ -153,7 +153,7 @@ export const getPostsByAlumni = (alumniId) =>
 export const togglePinPost = (postId) =>
   api.patch(`${BASE}/posts/${postId}/pin`);
 // // src/school_admin/services/alumniService.js
-// // Alumni module API service — matches SchoolSaaS Alumni API v1
+// // Alumni module API service — matches ShalaOne Alumni API v1
 
 // import apiClient from "../../common/utils/apiClient";
 

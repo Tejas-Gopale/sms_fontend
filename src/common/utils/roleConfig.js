@@ -64,9 +64,10 @@ export const ROLE_MENU = {
     {
       group: "Finance",
       items: [
-        { name: "Revenue",       icon: "TrendingUp",  path: "/super-admin/revenue" },
-        { name: "Expenses",      icon: "Receipt",     path: "/super-admin/expenses" },
-        { name: "Subscriptions", icon: "CreditCard",  path: "/super-admin/subscriptions" },
+        { name: "Revenue",            icon: "TrendingUp",  path: "/super-admin/revenue" },
+        { name: "Expenses",           icon: "Receipt",     path: "/super-admin/expenses" },
+        { name: "Subscriptions",      icon: "CreditCard",  path: "/super-admin/subscriptions" },
+        { name: "Payroll Scheduler",  icon: "Zap",         path: "/super-admin/payroll-scheduler" },
       ],
     },
     {
@@ -113,19 +114,23 @@ export const ROLE_MENU = {
     {
       group: "Academic & Learning",
       items: [
-        { name: "Classes",    icon: "BookOpen",     path: "/school-admin/classes" },
-        { name: "Subjects",   icon: "FileText",     path: "/school-admin/subjects" },
-        { name: "Timetable",  icon: "Clock",        path: "/school-admin/timetable" },
-        { name: "Exams",      icon: "ClipboardList",path: "/school-admin/exams" },
-        // { name: "Results",    icon: "BarChart3",    path: "/school-admin/results" },
+        { name: "Classes",        icon: "BookOpen",     path: "/school-admin/classes" },
+        { name: "Subjects",       icon: "FileText",     path: "/school-admin/subjects" },
+        { name: "Timetable",      icon: "Clock",        path: "/school-admin/timetable" },
+        { name: "Exams",          icon: "ClipboardList",path: "/school-admin/exams" },
+        { name: "Results",        icon: "BarChart3",    path: "/school-admin/results" },
+        { name: "Identity Cards", icon: "CreditCard",   path: "/school-admin/identity-card" },
       ],
     },
     {
       group: "Finance & Admin",
       items: [
-        { name: "Fee Management", icon: "IndianRupee", path: "/school-admin/fees" },
-        { name: "Visitors",       icon: "Eye",         path: "/school-admin/visitors" },
-        { name: "Notifications",  icon: "Bell",        path: "/school-admin/notifications" },
+        { name: "Fee Management",    icon: "IndianRupee", path: "/school-admin/fees" },
+        { name: "Payroll",           icon: "Banknote",    path: "/school-admin/payroll" },{ name: "Salary Structures", icon: "Layers", path: "/school-admin/salary-structure" },
+       
+        { name: "Visitors",          icon: "Eye",         path: "/school-admin/visitors" },
+        { name: "Notifications",     icon: "Bell",        path: "/school-admin/notifications" },
+        
       ],
     },
     {
@@ -353,16 +358,18 @@ export const ROLE_MENU = {
 
   ACCOUNTANT: [
     {
-      group: "Finance",
-      items: [
-        { name: "Dashboard",       icon: "LayoutDashboard", path: "/accountant/dashboard" },
-        { name: "Fee Management",  icon: "IndianRupee",     path: "/accountant/fees" },
-        // { name: "Revenue",         icon: "TrendingUp",      path: "/accountant/revenue" },
-        { name: "Expenses",        icon: "Receipt",         path: "/accountant/expenses" },
-        { name: "Salary Payroll",  icon: "Banknote",        path: "/accountant/payroll" },
-        { name: "Reports",         icon: "FileText",        path: "/accountant/reports" },
-      ],
-    },
+    
+  group: "Finance",
+  items: [
+    { name: "Dashboard",         icon: "LayoutDashboard", path: "/accountant/dashboard" },
+    { name: "Fee Management",    icon: "IndianRupee",     path: "/accountant/fees" },
+    { name: "Revenue",           icon: "TrendingUp",      path: "/accountant/revenue" },
+    { name: "Expenses",          icon: "Receipt",         path: "/accountant/expenses" },
+    { name: "Salary Payroll",    icon: "Banknote",        path: "/school-admin/payroll" },
+    { name: "Salary Structures", icon: "Layers",          path: "/accountant/salary-structure" }, // ← ADD
+    { name: "Reports",           icon: "FileText",        path: "/accountant/reports" },
+  ],
+},
     {
       group: "Personal",
       items: [
@@ -583,6 +590,17 @@ export const SIDEBAR_ALIAS = {
   CANTEEN_STAFF:  "CANTEEN_STAFF",
 };
 
+const BACKEND_FUNCTIONS_GROUP = {
+  group: "Backend",
+  items: [
+    { name: "Backend Functions", icon: "Plug", path: "/backend-functions" },
+  ],
+};
+
 export const getMenuForRole = (role) => {
-  return ROLE_MENU[role] || ROLE_MENU["STUDENT"];
+  const menu = ROLE_MENU[role] || ROLE_MENU["STUDENT"];
+  const hasBackendGroup = menu.some((group) =>
+    group.items.some((item) => item.path === BACKEND_FUNCTIONS_GROUP.items[0].path)
+  );
+  return hasBackendGroup ? menu : [...menu, BACKEND_FUNCTIONS_GROUP];
 };

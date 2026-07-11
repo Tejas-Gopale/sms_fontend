@@ -1,0 +1,83 @@
+// src/common/services/feeReceiptService.js
+// ─────────────────────────────────────────────────────────────────────────────
+// Fee Receipt API — all endpoints in one place
+// Backend base: /api/v1
+// All endpoints require JWT  →  Authorization: Bearer <token>
+// ─────────────────────────────────────────────────────────────────────────────
+
+import API from "./api";
+
+const feeReceiptService = {
+
+  // ─── GENERATE ────────────────────────────────────────────────────────────────
+  /**
+   * POST /fee-receipt/generate?paymentId=123
+   * Idempotent — safe to call multiple times for the same payment.
+   * Returns: FeeReceiptResponse (full receipt object)
+   * Call this right after a successful payment to create/fetch receipt.
+   */
+  generate: (paymentId) =>
+    API.post("/fee-receipt/generate", null, { params: { paymentId } }),
+
+  // ─── GET BY RECEIPT NUMBER ───────────────────────────────────────────────────
+  /**
+   * GET /fee-receipt/{receiptNumber}
+   * e.g. /fee-receipt/RCP-2026-000042
+   * Returns: FeeReceiptResponse
+   */
+  getByReceiptNumber: (receiptNumber) =>
+    API.get(`/fee-receipt/${receiptNumber}`),
+
+  // ─── GET BY PAYMENT ID ───────────────────────────────────────────────────────
+  /**
+   * GET /fee-receipt/payment/{paymentId}
+   * Returns: FeeReceiptResponse
+   * Throws 404 if receipt not yet generated for this payment.
+   */
+  getByPaymentId: (paymentId) =>
+    API.get(`/fee-receipt/payment/${paymentId}`),
+
+  // ─── GET ALL FOR A STUDENT (paginated) ──────────────────────────────────────
+  /**
+   * GET /fee-receipt/student/{studentId}?page=0&size=20
+   * Returns: Page<FeeReceiptResponse>
+   * Use .data.content to get the array of receipts.
+   */
+  getByStudent: (studentId, page = 0, size = 20) =>
+    API.get(`/fee-receipt/student/${studentId}`, { params: { page, size } }),
+
+  // ─── GET ALL FOR SCHOOL (admin, paginated) ───────────────────────────────────
+  /**
+   * GET /fee-receipt/school?page=0&size=50
+   * Admin endpoint — returns all receipts for the logged-in admin's school.
+   * Returns: Page<FeeReceiptResponse>
+   */
+  getBySchool: (page = 0, size = 50) =>
+    API.get("/fee-receipt/school", { params: { page, size } }),
+
+  // ─── GET PRINT-READY HTML (backend-rendered) ─────────────────────────────────
+  /**
+   * GET /fee-receipt/{id}/html
+   * Returns server-rendered HTML string — styled, print-ready A5 page.
+   * Open in a new window and call window.print() for direct printing.
+   * id = FeeReceipt.id (Long), NOT receiptNumber string.
+   */
+  getHtml: (receiptId) =>
+    API.get(`/fee-receipt/${receiptId}/html`, {
+      headers: { Accept: "text/html" },
+      responseType: "text",
+    }),
+
+  // ─── PARENT — LIST RECEIPT SUMMARIES FOR CHILD ────────────────────────────────
+  /**
+   * GET /parent/fees/receipts/{studentId}
+   * Parent-scoped — verifies parent→student relationship.
+   * Returns: FeeReceiptSummaryResponse[]
+   * Fields: id, receiptNumber, issuedOn, amountPaid, balanceDue,
+   *         paymentMode, transactionRef, academicYear
+   */
+  getForParent: (studentId) =>
+    API.get(`/parent/fees/receipts/${studentId}`),
+};
+
+export default feeReceiptService;

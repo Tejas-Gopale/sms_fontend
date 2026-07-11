@@ -42,7 +42,7 @@ export default function Sidebar() {
 
   return (
     <div className="w-60 h-screen bg-gray-900 text-white p-5">
-      <h2 className="text-xl mb-6">School SaaS</h2>
+      <h2 className="text-xl mb-6">ShalaOne</h2>
 
       {menu[role]?.map((item) => (
         <Link key={item.name} to={item.path}>

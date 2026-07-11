@@ -154,8 +154,8 @@ export default function LoginPage() {
       {/* ── LEFT PANEL ── */}
       <div className="left-panel">
         <div className="brand-mark">
-          <img src={logo} alt="SchoolMS Logo" className="brand-logo" />
-          <span className="brand-name">SchoolMS</span>
+          <img src={logo} alt="ShalaOne Logo" className="brand-logo" />
+          <span className="brand-name">ShalaOne</span>
         </div>
 
         <div className="hero-text">
@@ -196,7 +196,7 @@ export default function LoginPage() {
             <div className="view-login">
               <div className="form-header">
                 <h2 className="form-title">Welcome back</h2>
-                <p className="form-subtitle">Sign in to your SchoolSaaS account</p>
+                <p className="form-subtitle">Sign in to your ShalaOne account</p>
               </div>
 
               <form onSubmit={handleLogin} noValidate>
@@ -516,8 +516,8 @@ export default function LoginPage() {
 //       {/* ── LEFT PANEL ── */}
 //       <div className="left-panel">
 //         <div className="brand-mark">
-//           <img src={logo} alt="SchoolMS Logo" className="brand-logo" />
-//           <span className="brand-name">SchoolMS</span>
+//           <img src={logo} alt="ShalaOne Logo" className="brand-logo" />
+//           <span className="brand-name">ShalaOne</span>
 //         </div>
 
 //         <div className="hero-text">

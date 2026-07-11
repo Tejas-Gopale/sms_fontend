@@ -46,7 +46,7 @@
 //             <GraduationCap size={18} className="text-white" />
 //           </div>
 //           <div>
-//             <p className="text-white font-bold text-sm">SchoolMS</p>
+//             <p className="text-white font-bold text-sm">ShalaOne</p>
 //             <p className="text-gray-500 text-xs">Super Admin</p>
 //           </div>
 //         </div>
@@ -135,7 +135,7 @@
 // //             <GraduationCap size={18} className="text-white" />
 // //           </div>
 // //           <div>
-// //             <p className="text-white font-bold text-sm">SchoolMS</p>
+// //             <p className="text-white font-bold text-sm">ShalaOne</p>
 // //             <p className="text-gray-500 text-xs">Super Admin</p>
 // //           </div>
 // //         </div>

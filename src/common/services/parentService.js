@@ -20,6 +20,47 @@ export const getStudentHomework = (studentId, status) =>
 export const getHomeworkDetail = (homeworkId) =>
   API.get(`/parent/homework/detail/${homeworkId}`);
 
+// ─── Homework Notification Lifecycle  (NEW) ───────────────────────────────────
+//
+//  These two endpoints track parent engagement with push notifications
+//  sent when a teacher assigns homework.
+//
+//  Flow on the desktop web app:
+//    1. Parent opens the Homework page → page loads → markHomeworkNotificationSeen()
+//       is called for each homework item on screen.  This records that the parent
+//       visited the page and effectively "saw" the notification.
+//    2. Parent clicks a homework card to expand it → markHomeworkNotificationRead()
+//       is called for that specific homework.  This records that the parent
+//       actively opened and read the assignment detail.
+//
+//  These calls are fire-and-forget — errors are silently swallowed so a
+//  network hiccup never breaks the homework view for the parent.
+
+/**
+ * POST /homework/{homeworkId}/notification/seen
+ *
+ * Marks the HomeworkNotificationLog row as seen=true for the authenticated parent.
+ * Call when the homework list finishes loading (items are visible on screen).
+ * Idempotent — safe to call multiple times.
+ *
+ * @param {number} homeworkId
+ */
+export const markHomeworkNotificationSeen = (homeworkId) =>
+  API.post(`/homework/${homeworkId}/notification/seen`);
+
+/**
+ * POST /homework/{homeworkId}/notification/read
+ *
+ * Marks the HomeworkNotificationLog row as read=true for the authenticated parent.
+ * Also implicitly marks as seen if not already.
+ * Call when the parent clicks to open/expand a homework card.
+ * Idempotent — safe to call multiple times.
+ *
+ * @param {number} homeworkId
+ */
+export const markHomeworkNotificationRead = (homeworkId) =>
+  API.post(`/homework/${homeworkId}/notification/read`);
+
 // ─── Exam Results ────────────────────────────────────────────────────────────
 export const getExamResults = (studentId) =>
   API.get(`/parent/exams/${studentId}`);

@@ -24,7 +24,7 @@ import {
   BarChart3, MessageSquare, ChevronRight, Clock, ClipboardCheck,
   Megaphone, TrendingUp, Receipt, CreditCard, MapPin, Navigation,
   ArrowLeftRight, Eye, Shield, AlertCircle, Plug, School, Banknote,
-  UtensilsCrossed, ShoppingCart, BookMarked, Crown,
+  UtensilsCrossed, ShoppingCart, BookMarked, Crown, Zap,
 } from "lucide-react";
 
 // ─── Icon registry — add any new Lucide icons here ───────────────────────────
@@ -35,7 +35,7 @@ const ICON_MAP = {
   BarChart3, MessageSquare, ChevronRight, Clock, ClipboardCheck,
   Megaphone, TrendingUp, Receipt, CreditCard, MapPin, Navigation,
   ArrowLeftRight, Eye, Shield, AlertCircle, Plug, School, Banknote,
-  UtensilsCrossed, ShoppingCart, BookMarked, Crown,
+  UtensilsCrossed, ShoppingCart, BookMarked, Crown, Zap,
 };
 
 // ─── Human-readable role labels ───────────────────────────────────────────────

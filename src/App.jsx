@@ -13,6 +13,7 @@ import ProtectedRoute          from "./common/routes/ProtectedRoute";
 import LoginPage               from "./common/components/LoginPage";
 import Resetpasswordpage       from "./common/components/Resetpasswordpage";
 import ProfilePage             from "./profile/ProfilePage";
+import BackendFunctions        from "./common/pages/BackendFunctions";
 
 // ── Super Admin ─────────────────────────────────────────────────────────────
 import SuperAdminHome          from "./super_admin/pages/SuperAdminHome";
@@ -49,6 +50,12 @@ import EventManagement         from "./school_admin/pages/EventManagement";
 import AlumniManagement        from "./school_admin/pages/AlumniManagement";
 import AdminLeaveManagement    from "./school_admin/pages/Adminleavemanagement";
 import TimetableCreator        from "./school_admin/components/TimetableCreator";
+import Results                 from "./school_admin/pages/Results";
+import IdentityCard            from "./school_admin/pages/IdentityCard";
+import PayrollManagement       from "./school_admin/pages/PayrollManagement";
+
+// ── Super Admin (new pages) ──────────────────────────────────────────────────
+import SuperAdminPayrollScheduler from "./super_admin/pages/PayrollScheduler";
 
 // ── Principal ───────────────────────────────────────────────────────────────
 import PrincipalDashboard      from "./principal/pages/PrincipalDashboard";
@@ -94,7 +101,7 @@ import AccountantDashboard     from "./accountant/pages/AccountantDashboard";
 // ── Transport roles ─────────────────────────────────────────────────────────
 import TransportManagerDashboard from "./transport_manager/pages/TransportManagerDashboard";
 import BusDriverDashboard      from "./bus_driver/pages/BusDriverDashboard";
-
+import SalaryStructurePage     from "./school_admin/pages/SalaryStructurePage";
 // ── Support staff roles ─────────────────────────────────────────────────────
 import LibrarianDashboard      from "./librarian/pages/LibrarianDashboard";
 import {
@@ -116,6 +123,13 @@ function TimetableCreatorPage() {
 const ADMIN_ROLES     = ["SCHOOL_ADMIN"];
 const PRINCIPAL_ROLES = ["PRINCIPAL", "VICE_PRINCIPAL"];
 const TEACHER_ROLES   = ["TEACHER", "CLASS_TEACHER"];
+const ALL_BACKEND_ROLES = [
+  "SUPER_ADMIN", "SCHOOL_OWNER", "SCHOOL_ADMIN", "PRINCIPAL", "VICE_PRINCIPAL",
+  "TEACHER", "CLASS_TEACHER", "COUNSELOR", "STUDENT", "PARENT",
+  "ACCOUNTANT", "CASHIER", "TRANSPORT_MANAGER", "BUS_DRIVER", "BUS_CONDUCTOR",
+  "LIBRARIAN", "RECEPTIONIST", "NURSE", "SECURITY", "HOUSEKEEPING",
+  "CANTEEN_STAFF", "IT_ADMIN",
+];
 
 function App() {
   useFCM();
@@ -128,6 +142,7 @@ function App() {
         <Route path="/"               element={<LoginPage />} />
         <Route path="/login"          element={<LoginPage />} />
         <Route path="/reset-password" element={<Resetpasswordpage />} />
+        <Route path="/backend-functions" element={<ProtectedRoute roles={ALL_BACKEND_ROLES}><BackendFunctions /></ProtectedRoute>} />
 
         {/* ── Super Admin ─────────────────────────────────────────────────── */}
         <Route path="/super-admin/dashboard"     element={<ProtectedRoute roles={["SUPER_ADMIN"]}><SuperAdminHome /></ProtectedRoute>} />
@@ -138,7 +153,8 @@ function App() {
         <Route path="/super-admin/subscriptions" element={<ProtectedRoute roles={["SUPER_ADMIN"]}><SMS_Subscriptions /></ProtectedRoute>} />
         <Route path="/super-admin/settings"      element={<ProtectedRoute roles={["SUPER_ADMIN"]}><SMS_Settings /></ProtectedRoute>} />
         <Route path="/super-admin/school-owner"  element={<ProtectedRoute roles={["SUPER_ADMIN"]}><SMS_SchoolOwner /></ProtectedRoute>} />
-        <Route path="/super-admin/expenses"      element={<ProtectedRoute roles={["SUPER_ADMIN"]}><SMS_Expenses /></ProtectedRoute>} />
+        <Route path="/super-admin/expenses"            element={<ProtectedRoute roles={["SUPER_ADMIN"]}><SMS_Expenses /></ProtectedRoute>} />
+        <Route path="/super-admin/payroll-scheduler"   element={<ProtectedRoute roles={["SUPER_ADMIN"]}><SuperAdminPayrollScheduler /></ProtectedRoute>} />
 
         {/* ── School Owner ─────────────────────────────────────────────────── */}
         <Route path="/school-owner/dashboard"        element={<ProtectedRoute roles={["SCHOOL_OWNER"]}><SchoolOwnerDashboard /></ProtectedRoute>} />
@@ -168,9 +184,16 @@ function App() {
         <Route path="/school-admin/hostel"           element={<ProtectedRoute roles={ADMIN_ROLES}><HostelManagement /></ProtectedRoute>} />
         <Route path="/school-admin/leave-management" element={<ProtectedRoute roles={ADMIN_ROLES}><AdminLeaveManagement /></ProtectedRoute>} />
         <Route path="/school-admin/alumni"           element={<ProtectedRoute roles={ADMIN_ROLES}><AlumniManagement /></ProtectedRoute>} />
+        <Route path="/school-admin/results"          element={<ProtectedRoute roles={ADMIN_ROLES}><Results /></ProtectedRoute>} />
+        <Route path="/school-admin/identity-card"    element={<ProtectedRoute roles={ADMIN_ROLES}><IdentityCard /></ProtectedRoute>} />
+        <Route path="/school-admin/salary-structure" element={<ProtectedRoute roles={[...ADMIN_ROLES, "ACCOUNTANT"]}><SalaryStructurePage /></ProtectedRoute>} />
+<Route path="/accountant/salary-structure"   element={<ProtectedRoute roles={["ACCOUNTANT"]}><SalaryStructurePage /></ProtectedRoute>} />
+        <Route path="/school-admin/payroll"          element={<ProtectedRoute roles={[...ADMIN_ROLES, "ACCOUNTANT"]}><PayrollManagement /></ProtectedRoute>} />
         <Route path="/school-admin/profile-settings" element={<ProtectedRoute roles={ADMIN_ROLES}><ProfilePage /></ProtectedRoute>} />
         <Route path="/school-admin/settings"         element={<ProtectedRoute roles={ADMIN_ROLES}><Settings /></ProtectedRoute>} />
         <Route path="/super-admin/my-attendance"     element={<ProtectedRoute roles={ADMIN_ROLES}><TeacherAttendance /></ProtectedRoute>} />
+       
+       
         {/* ── Principal & Vice Principal ───────────────────────────────────── */}
         <Route path="/principal/dashboard"        element={<ProtectedRoute roles={PRINCIPAL_ROLES}><PrincipalDashboard /></ProtectedRoute>} />
         <Route path="/principal/students"         element={<ProtectedRoute roles={PRINCIPAL_ROLES}><Students /></ProtectedRoute>} />
@@ -244,9 +267,9 @@ function App() {
         {/* ── Accountant ──────────────────────────────────────────────────── */}
         <Route path="/accountant/dashboard"        element={<ProtectedRoute roles={["ACCOUNTANT"]}><AccountantDashboard /></ProtectedRoute>} />
         <Route path="/accountant/fees"             element={<ProtectedRoute roles={["ACCOUNTANT"]}><FeeManagement /></ProtectedRoute>} />
-        {/* <Route path="/accountant/revenue"          element={<ProtectedRoute roles={["ACCOUNTANT"]}><SMS_Revenue /></ProtectedRoute>} /> */}
+        <Route path="/accountant/revenue"          element={<ProtectedRoute roles={["ACCOUNTANT"]}><SMS_Revenue /></ProtectedRoute>} />
         <Route path="/accountant/expenses"         element={<ProtectedRoute roles={["ACCOUNTANT"]}><ExpensePage /></ProtectedRoute>} />
-        <Route path="/accountant/payroll"          element={<ProtectedRoute roles={["ACCOUNTANT"]}><AccountantDashboard /></ProtectedRoute>} />
+        <Route path="/accountant/payroll"          element={<ProtectedRoute roles={["ACCOUNTANT"]}><PayrollManagement /></ProtectedRoute>} />
         <Route path="/accountant/reports"          element={<ProtectedRoute roles={["ACCOUNTANT"]}><AccountantDashboard /></ProtectedRoute>} />
         <Route path="/accountant/my-attendance"    element={<ProtectedRoute roles={["ACCOUNTANT"]}><TeacherAttendance /></ProtectedRoute>} />
         <Route path="/accountant/profile-settings" element={<ProtectedRoute roles={["ACCOUNTANT"]}><ProfilePage /></ProtectedRoute>} />

@@ -87,7 +87,7 @@
 //           SS
 //         </div>
 //         <div>
-//           <p className="font-semibold text-sm text-white leading-tight">SchoolSaaS</p>
+//           <p className="font-semibold text-sm text-white leading-tight">ShalaOne</p>
 //           <p className="text-xs text-yellow-400 font-medium">{roleLabel}</p>
 //         </div>
 //       </div>
