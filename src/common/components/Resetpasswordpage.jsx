@@ -280,8 +280,8 @@ const ResetPasswordPage = () => {
       {/* ── LEFT PANEL ── */}
       <div className="rp-left">
         <div className="rp-brand">
-          <img src={logo} alt="SchoolMS Logo" className="rp-brand-logo" />
-          <span className="rp-brand-name">SchoolMS</span>
+          <img src={logo} alt="ShalaOne Logo" className="rp-brand-logo" />
+          <span className="rp-brand-name">ShalaOne</span>
         </div>
 
         <div className="rp-hero">
