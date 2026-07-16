@@ -7,6 +7,7 @@ import {
   Building2, UserPlus
 } from "lucide-react";
 import { admissionService } from "../../common/services/api";
+import API from "../../common/services/api";
 
 // ─── Step config ──────────────────────────────────────────────────────────────
 const STEPS = [
@@ -46,6 +47,13 @@ export default function DirectAdmissionModal({ onClose, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState("");
   const [result, setResult]   = useState(null);
+  const [classrooms, setClassrooms] = useState([]);
+
+  useEffect(() => {
+    API.get("/school-admin/getClassRoom")
+      .then((res) => setClassrooms(res.data?.content || []))
+      .catch(() => setClassrooms([]));
+  }, []);
 
   const set = (field) => (e) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
@@ -61,7 +69,7 @@ export default function DirectAdmissionModal({ onClose, onSuccess }) {
       if (!form.gender)                  return "Please select a gender.";
     }
     if (step === 2) {
-      if (!form.classRoomId)   return "Classroom ID is required.";
+      if (!form.classRoomId)   return "Please select a classroom.";
       if (!form.academicYear.trim()) return "Academic year is required.";
     }
     if (step === 3) {
@@ -188,7 +196,7 @@ export default function DirectAdmissionModal({ onClose, onSuccess }) {
                 transition={{ duration: 0.2 }}
               >
                 {step === 1 && <StepStudent form={form} set={set} />}
-                {step === 2 && <StepEnroll  form={form} set={set} />}
+                {step === 2 && <StepEnroll  form={form} set={set} classrooms={classrooms} />}
                 {step === 3 && <StepParent  form={form} set={set} />}
                 {step === 4 && <StepAddress form={form} set={set} />}
               </motion.div>
@@ -277,7 +285,7 @@ function StepStudent({ form, set }) {
 }
 
 // ─── Step 2: Enrollment ───────────────────────────────────────────────────────
-function StepEnroll({ form, set }) {
+function StepEnroll({ form, set, classrooms }) {
   return (
     <div className="space-y-5">
       <SectionTitle icon={<GraduationCap size={16}/>} title="Enrollment Details" />
@@ -309,8 +317,16 @@ function StepEnroll({ form, set }) {
         />
       </Field>
 
-      <Field label="Classroom ID *" hint="Numeric ID of the target classroom">
-        <Input icon={<Hash size={14}/>} type="number" placeholder="e.g. 7" value={form.classRoomId} onChange={set("classRoomId")} />
+      <Field label="Classroom *" hint="Select the target class and section">
+        <Select
+          value={form.classRoomId}
+          onChange={set("classRoomId")}
+          placeholder="Select classroom"
+          options={classrooms.map((c) => ({
+            value: String(c.id),
+            label: `Grade ${c.grade}${c.section ? ` - ${c.section}` : ""}`,
+          }))}
+        />
       </Field>
 
       <div className="grid grid-cols-2 gap-4">
@@ -470,7 +486,11 @@ function Select({ options, placeholder, ...props }) {
         focus:ring-2 focus:ring-violet-400/30 appearance-none"
     >
       <option value="">{placeholder}</option>
-      {options.map(o => <option key={o} value={o}>{o}</option>)}
+      {options.map(o =>
+        typeof o === "object"
+          ? <option key={o.value} value={o.value}>{o.label}</option>
+          : <option key={o} value={o}>{o}</option>
+      )}
     </select>
   );
 }

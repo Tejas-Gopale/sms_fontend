@@ -22,6 +22,11 @@ export default function FeeManagement() {
   const [form, setForm]                     = useState({ classRoomId: "", className: "", feeItems: [] });
   const [feeDetail, setFeeDetail]           = useState(null);
   const [detailLoading, setDetailLoading]   = useState(false);
+  const [concessions, setConcessions]       = useState([]);
+  const [concessionForm, setConcessionForm] = useState({
+    concessionType: "SIBLING_DISCOUNT", isPercentage: "true", value: "", reason: "",
+  });
+  const [concessionSaving, setConcessionSaving] = useState(false);
 
   const schoolId = Number(localStorage.getItem("schoolId")) || 1;
 
@@ -55,10 +60,50 @@ export default function FeeManagement() {
       setDetailLoading(true);
       const res = await API.get(`/fees/student-detail/${studentId}`);
       setFeeDetail(res.data);
+      fetchConcessions(studentId);
     } catch (err) {
       toast.error("Fee detail load nahi ho paya" + errMsg(err));
     } finally {
       setDetailLoading(false);
+    }
+  };
+
+  const fetchConcessions = async (studentId) => {
+    try {
+      const res = await API.get(`/fees/concession/student/${studentId}`);
+      setConcessions(res.data || []);
+    } catch (err) {
+      // non-critical
+      setConcessions([]);
+    }
+  };
+
+  const handleAddConcession = async () => {
+    if (!feeDetail?.studentId) return toast.error("Student ID missing");
+    if (!concessionForm.value || Number(concessionForm.value) <= 0)
+      return toast.error("Valid discount value bharo");
+
+    const approvedByUserId = Number(localStorage.getItem("userId")) || undefined;
+
+    try {
+      setConcessionSaving(true);
+      await API.post(
+        `/fees/concession?schoolId=${schoolId}&approvedByUserId=${approvedByUserId}`,
+        {
+          studentId: feeDetail.studentId,
+          concessionType: concessionForm.concessionType,
+          isPercentage: concessionForm.isPercentage === "true",
+          value: Number(concessionForm.value),
+          reason: concessionForm.reason || undefined,
+        }
+      );
+      toast.success("Concession add ho gayi ✅ (agli fee generation mein apply hogi)");
+      setConcessionForm({ concessionType: "SIBLING_DISCOUNT", isPercentage: "true", value: "", reason: "" });
+      fetchConcessions(feeDetail.studentId);
+    } catch (err) {
+      toast.error("Concession add nahi ho payi" + errMsg(err));
+    } finally {
+      setConcessionSaving(false);
     }
   };
 
@@ -143,6 +188,10 @@ export default function FeeManagement() {
             feeStructureId: structureId,
             feeHeadId: Number(item.feeHeadId),
             amount: Number(item.amount),
+            installmentNumber: item.installmentNumber ? Number(item.installmentNumber) : undefined,
+            dueDate: item.dueDate || undefined,
+            lateFeeType: item.lateFeeType || undefined,
+            lateFeeValue: item.lateFeeValue ? Number(item.lateFeeValue) : undefined,
           })
         )
       );
@@ -195,7 +244,9 @@ export default function FeeManagement() {
   // ─── FORM HELPERS ─────────────────────────────────────────────────────────
 
   const addFeeItem = () =>
-    setForm(f => ({ ...f, feeItems: [...f.feeItems, { feeHeadId: "", amount: "" }] }));
+    setForm(f => ({ ...f, feeItems: [...f.feeItems, {
+      feeHeadId: "", amount: "", dueDate: "", lateFeeType: "", lateFeeValue: "", installmentNumber: "",
+    }] }));
 
   const removeFeeItem = (idx) =>
     setForm(f => ({ ...f, feeItems: f.feeItems.filter((_, i) => i !== idx) }));
@@ -576,6 +627,43 @@ export default function FeeManagement() {
                           onChange={e => handleFormChange(idx, "amount", e.target.value)}
                         />
                       </div>
+
+                      {/* ── Installment / Due Date / Late Fee (optional) ── */}
+                      <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-700/50">
+                        <input
+                          type="date"
+                          className="bg-slate-900/60 rounded-lg px-2 py-1.5 text-[11px] text-slate-300 outline-none"
+                          value={item.dueDate}
+                          onChange={e => handleFormChange(idx, "dueDate", e.target.value)}
+                          title="Due date"
+                        />
+                        <input
+                          type="number"
+                          min="1"
+                          placeholder="Installment #"
+                          className="bg-slate-900/60 rounded-lg px-2 py-1.5 text-[11px] text-slate-300 outline-none placeholder:text-slate-600"
+                          value={item.installmentNumber}
+                          onChange={e => handleFormChange(idx, "installmentNumber", e.target.value)}
+                        />
+                        <select
+                          className="bg-slate-900/60 rounded-lg px-2 py-1.5 text-[11px] text-slate-300 outline-none"
+                          value={item.lateFeeType}
+                          onChange={e => handleFormChange(idx, "lateFeeType", e.target.value)}
+                        >
+                          <option value="">No late fee</option>
+                          <option value="FLAT">Flat ₹</option>
+                          <option value="PERCENT">Percent %</option>
+                        </select>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder={item.lateFeeType === "PERCENT" ? "e.g. 5 (%)" : "e.g. 100 (₹)"}
+                          className="bg-slate-900/60 rounded-lg px-2 py-1.5 text-[11px] text-slate-300 outline-none placeholder:text-slate-600"
+                          value={item.lateFeeValue}
+                          onChange={e => handleFormChange(idx, "lateFeeValue", e.target.value)}
+                          disabled={!item.lateFeeType}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -696,6 +784,80 @@ export default function FeeManagement() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* Concessions Section */}
+            <div className="px-8 pb-4">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
+                Concessions / Discounts ({concessions.length})
+              </p>
+
+              {concessions.length > 0 && (
+                <div className="space-y-2 mb-4 max-h-[120px] overflow-y-auto">
+                  {concessions.map((c) => (
+                    <div key={c.id} className="flex items-center justify-between p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                      <div>
+                        <p className="text-xs font-bold text-emerald-700">{c.concessionType?.replaceAll("_", " ")}</p>
+                        {c.reason && <p className="text-[10px] text-slate-400">{c.reason}</p>}
+                      </div>
+                      <p className="text-sm font-black text-emerald-700">
+                        {c.isPercentage ? `${c.value}%` : `₹${c.value}`}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="bg-slate-50 rounded-2xl border border-slate-100 p-4 space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    className="bg-white border border-slate-200 rounded-lg px-2 py-2 text-xs font-medium outline-none"
+                    value={concessionForm.concessionType}
+                    onChange={(e) => setConcessionForm((f) => ({ ...f, concessionType: e.target.value }))}
+                  >
+                    <option value="SIBLING_DISCOUNT">Sibling Discount</option>
+                    <option value="STAFF_WARD_DISCOUNT">Staff Ward Discount</option>
+                    <option value="SCHOLARSHIP">Scholarship</option>
+                    <option value="RTE">RTE</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                  <select
+                    className="bg-white border border-slate-200 rounded-lg px-2 py-2 text-xs font-medium outline-none"
+                    value={concessionForm.isPercentage}
+                    onChange={(e) => setConcessionForm((f) => ({ ...f, isPercentage: e.target.value }))}
+                  >
+                    <option value="true">Percentage (%)</option>
+                    <option value="false">Flat Amount (₹)</option>
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder={concessionForm.isPercentage === "true" ? "e.g. 10 (%)" : "e.g. 2000 (₹)"}
+                    className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs outline-none"
+                    value={concessionForm.value}
+                    onChange={(e) => setConcessionForm((f) => ({ ...f, value: e.target.value }))}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Reason (optional)"
+                    className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs outline-none"
+                    value={concessionForm.reason}
+                    onChange={(e) => setConcessionForm((f) => ({ ...f, reason: e.target.value }))}
+                  />
+                </div>
+                <button
+                  onClick={handleAddConcession}
+                  disabled={concessionSaving}
+                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition disabled:opacity-60"
+                >
+                  {concessionSaving ? "Saving..." : "+ Add Concession"}
+                </button>
+                <p className="text-[10px] text-slate-400">
+                  Note: applies automatically the next time fees are generated for this student — does not retroactively change already-generated dues.
+                </p>
+              </div>
             </div>
 
             {/* Footer */}

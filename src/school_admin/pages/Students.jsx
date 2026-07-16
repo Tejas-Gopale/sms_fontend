@@ -24,7 +24,12 @@ export default function Students() {
   const [formData, setFormData] = useState({
     firstName: "", lastName: "", email: "", password: "",
     admissionNumber: "", dateOfBirth: "", gender: "male",
+    bloodGroup: "", category: "", aadharNumber: "",
+    address: "", city: "", pincode: "",
+    emergencyContactName: "", emergencyContactPhone: "",
+    medicalConditions: "", previousSchool: "", previousSchoolTcNumber: "",
   });
+  const [showMoreDetails, setShowMoreDetails] = useState(false);
   const [file, setFile] = useState(null);
 
   // ✅ 1. FETCH CLASSROOMS (Cached for 1 hour kyunki classes roz nahi badalti)
@@ -65,6 +70,15 @@ export default function Students() {
     onSuccess: () => {
       alert("Student Created ✅");
       setShowAddStudent(false);
+      setShowMoreDetails(false);
+      setFormData({
+        firstName: "", lastName: "", email: "", password: "",
+        admissionNumber: "", dateOfBirth: "", gender: "male",
+        bloodGroup: "", category: "", aadharNumber: "",
+        address: "", city: "", pincode: "",
+        emergencyContactName: "", emergencyContactPhone: "",
+        medicalConditions: "", previousSchool: "", previousSchoolTcNumber: "",
+      });
       queryClient.invalidateQueries(["students"]); // Refresh List
     },
     onError: () => alert("Error creating student ❌")
@@ -236,6 +250,71 @@ export default function Students() {
                   </select>
                 </div>
               </div>
+
+              {/* ── Additional Details (new fields) ─────────────────────────── */}
+              <button
+                type="button"
+                onClick={() => setShowMoreDetails((v) => !v)}
+                className="text-xs font-bold text-indigo-600 hover:text-indigo-700 mb-4"
+              >
+                {showMoreDetails ? "− Hide additional details" : "+ Add compliance / health / address details (optional)"}
+              </button>
+
+              {showMoreDetails && (
+                <div className="grid grid-cols-2 gap-4 mb-6 pt-2 border-t border-slate-100">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Blood Group</label>
+                    <input name="bloodGroup" onChange={handleChange} value={formData.bloodGroup} className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500/20 outline-none" placeholder="e.g. O+" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Category</label>
+                    <select name="category" onChange={handleChange} value={formData.category} className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500/20 outline-none">
+                      <option value="">Select</option>
+                      <option value="General">General</option>
+                      <option value="OBC">OBC</option>
+                      <option value="SC">SC</option>
+                      <option value="ST">ST</option>
+                      <option value="EWS">EWS</option>
+                    </select>
+                  </div>
+                  <div className="col-span-2 space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Aadhar Number</label>
+                    <input name="aadharNumber" onChange={handleChange} value={formData.aadharNumber} className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500/20 outline-none" placeholder="XXXX XXXX XXXX" />
+                  </div>
+                  <div className="col-span-2 space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Address</label>
+                    <input name="address" onChange={handleChange} value={formData.address} className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500/20 outline-none" placeholder="House no, street name..." />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">City</label>
+                    <input name="city" onChange={handleChange} value={formData.city} className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500/20 outline-none" placeholder="e.g. Mumbai" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pincode</label>
+                    <input name="pincode" onChange={handleChange} value={formData.pincode} className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500/20 outline-none" placeholder="e.g. 400001" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Emergency Contact Name</label>
+                    <input name="emergencyContactName" onChange={handleChange} value={formData.emergencyContactName} className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500/20 outline-none" placeholder="e.g. Uncle / Neighbour" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Emergency Contact Phone</label>
+                    <input name="emergencyContactPhone" onChange={handleChange} value={formData.emergencyContactPhone} className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500/20 outline-none" placeholder="10-digit number" />
+                  </div>
+                  <div className="col-span-2 space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Medical Conditions / Allergies</label>
+                    <input name="medicalConditions" onChange={handleChange} value={formData.medicalConditions} className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500/20 outline-none" placeholder="e.g. Peanut allergy, Asthma" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Previous School</label>
+                    <input name="previousSchool" onChange={handleChange} value={formData.previousSchool} className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500/20 outline-none" placeholder="e.g. St. Xavier's" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Previous TC Number</label>
+                    <input name="previousSchoolTcNumber" onChange={handleChange} value={formData.previousSchoolTcNumber} className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500/20 outline-none" placeholder="e.g. TC-2024-118" />
+                  </div>
+                </div>
+              )}
 
               <button
                 onClick={handleCreateStudent}

@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react";
 import SchoolAdminSidebar from "../components/SchoolAdminSidebar";
 import { examService, resultService } from "../../common/services/examService";
+import { getClassrooms, getStudentsByClassroom } from "../../common/services/api";
 import {
   BarChart3, Trophy, ClipboardList, RefreshCcw,
   Calculator, Search, X, Printer, TrendingUp, TrendingDown,
@@ -96,7 +97,15 @@ export default function Results() {
 
   // report card tab
   const [rcStudentId, setRcStudentId]     = useState("");
+  const [rcClassId, setRcClassId]         = useState("");
+  const [rcClassrooms, setRcClassrooms]   = useState([]);
+  const [rcStudents, setRcStudents]       = useState([]);
+  const [rcStudentsLoading, setRcStudentsLoading] = useState(false);
   const [reportCard, setReportCard]       = useState(null);
+  const [rcEditForm, setRcEditForm]       = useState({
+    teacherRemarks: "", principalRemarks: "", coScholasticGrades: "", promotedToNextClass: "",
+  });
+  const [rcSaving, setRcSaving]           = useState(false);
 
   // recalculate
   const [recalculating, setRecalculating] = useState(false);
@@ -126,6 +135,29 @@ export default function Results() {
       }
     });
   }, []);
+
+  // ── Load classrooms for report-card student picker ─────────────────────────
+  useEffect(() => {
+    getClassrooms()
+      .then((data) => setRcClassrooms(data?.content || data || []))
+      .catch(() => setRcClassrooms([]));
+  }, []);
+
+  const handleRcClassChange = async (classId) => {
+    setRcClassId(classId);
+    setRcStudentId("");
+    setRcStudents([]);
+    if (!classId) return;
+    setRcStudentsLoading(true);
+    try {
+      const data = await getStudentsByClassroom(classId);
+      setRcStudents(data || []);
+    } catch {
+      notify("Students load nahi hue is classroom ke liye", false);
+    } finally {
+      setRcStudentsLoading(false);
+    }
+  };
 
   // ── Class Results ──────────────────────────────────────────────────────────
   const loadClassResults = () => wrap(async () => {
@@ -192,10 +224,43 @@ export default function Results() {
     if (!selectedExamId || !rcStudentId.trim())
       return notify("Exam aur student ID dono zaroori hain", false);
     try {
-      const r = await resultService.getByStudent(rcStudentId.trim(), selectedExamId);
+      const r = await resultService.getReportCard(rcStudentId.trim(), selectedExamId);
       setReportCard(r.data);
+      setRcEditForm({
+        teacherRemarks: r.data.teacherRemarks || "",
+        principalRemarks: r.data.principalRemarks || "",
+        coScholasticGrades: r.data.coScholasticGrades || "",
+        promotedToNextClass: r.data.promotedToNextClass == null ? "" : String(r.data.promotedToNextClass),
+      });
     } catch {
       notify("Is student ka report card nahi mila", false);
+    }
+  });
+
+  const saveReportCardRemarks = () => wrap(async () => {
+    if (!reportCard?.summaryId)
+      return notify("Result summary nahi mila — pehle 'Calculate All' chalao is exam ke liye", false);
+    setRcSaving(true);
+    try {
+      const payload = {
+        teacherRemarks: rcEditForm.teacherRemarks || undefined,
+        principalRemarks: rcEditForm.principalRemarks || undefined,
+        coScholasticGrades: rcEditForm.coScholasticGrades || undefined,
+        promotedToNextClass: rcEditForm.promotedToNextClass === "" ? undefined : rcEditForm.promotedToNextClass === "true",
+      };
+      const res = await resultService.updateSummary(reportCard.summaryId, payload);
+      setReportCard((prev) => ({
+        ...prev,
+        teacherRemarks: res.data.teacherRemarks,
+        principalRemarks: res.data.principalRemarks,
+        coScholasticGrades: res.data.coScholasticGrades,
+        promotedToNextClass: res.data.promotedToNextClass,
+      }));
+      notify("Report card remarks saved ✅");
+    } catch (e) {
+      notify(e.response?.data?.message || "Remarks save nahi hue", false);
+    } finally {
+      setRcSaving(false);
     }
   });
 
@@ -532,18 +597,43 @@ export default function Results() {
               marginBottom: 20, display: "flex", gap: 14, alignItems: "flex-end",
               flexWrap: "wrap", boxShadow: "0 1px 6px rgba(0,0,0,0.07)",
             }}>
-              <div style={{ flex: 1, minWidth: 160 }}>
+              <div style={{ minWidth: 180 }}>
                 <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 5, textTransform: "uppercase" }}>
-                  Student ID
+                  Classroom
                 </label>
-                <input
-                  type="number"
-                  placeholder="e.g. 101"
+                <select
+                  value={rcClassId}
+                  onChange={(e) => handleRcClassChange(e.target.value)}
+                  style={{ ...S.inp, maxWidth: 220 }}
+                >
+                  <option value="">Select classroom</option>
+                  {rcClassrooms.map((cls) => (
+                    <option key={cls.id} value={cls.id}>
+                      Grade {cls.grade}{cls.section ? ` - ${cls.section}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 5, textTransform: "uppercase" }}>
+                  Student
+                </label>
+                <select
                   value={rcStudentId}
                   onChange={(e) => setRcStudentId(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && loadReportCard()}
-                  style={{ ...S.inp, maxWidth: 200 }}
-                />
+                  disabled={!rcClassId || rcStudentsLoading}
+                  style={{ ...S.inp, maxWidth: 260 }}
+                >
+                  <option value="">
+                    {!rcClassId ? "Select classroom first" : rcStudentsLoading ? "Loading..." : "Select student"}
+                  </option>
+                  {rcStudents.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {(s.firstName || s.name || "") + " " + (s.lastName || "")}
+                      {s.admissionNumber ? ` (${s.admissionNumber})` : ""}
+                    </option>
+                  ))}
+                </select>
               </div>
               <button onClick={loadReportCard} disabled={loading} style={S.btn()}>
                 <Search size={14} /> {loading ? "Loading..." : "Get Report Card"}
@@ -663,6 +753,7 @@ export default function Results() {
                       ["Percentage",      reportCard.percentage != null ? `${reportCard.percentage.toFixed(2)}%` : "—"],
                       ["Overall Grade",   reportCard.overallGrade || reportCard.grade || "—"],
                       ["Class Rank",      reportCard.rank ? `#${reportCard.rank} of ${reportCard.totalStudents}` : "—"],
+                      ["Attendance",      reportCard.attendancePercent != null ? `${reportCard.attendancePercent.toFixed(1)}%` : "—"],
                     ].map(([l, v]) => (
                       <div key={l} style={{
                         display: "flex", justifyContent: "space-between",
@@ -686,6 +777,96 @@ export default function Results() {
                       </div>
                     )}
                   </div>
+                </div>
+
+                {/* Co-scholastic + Remarks + Promotion (view + edit) */}
+                <div style={{ ...S.card, padding: 20, marginTop: 4 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                    <h4 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: "#1e293b" }}>
+                      Report Card Remarks
+                    </h4>
+                    {reportCard.promotedToNextClass != null && (
+                      <span style={{
+                        background: reportCard.promotedToNextClass ? "#dcfce7" : "#fee2e2",
+                        color: reportCard.promotedToNextClass ? "#166534" : "#991b1b",
+                        borderRadius: 8, padding: "4px 12px", fontWeight: 700, fontSize: 12,
+                      }}>
+                        {reportCard.promotedToNextClass ? "✓ Promoted" : "Not Promoted"}
+                      </span>
+                    )}
+                  </div>
+
+                  {!reportCard.summaryId && (
+                    <div style={{
+                      background: "#fef9c3", border: "1px solid #fde047", borderRadius: 8,
+                      padding: "10px 14px", fontSize: 13, color: "#854d0e", marginBottom: 14,
+                    }}>
+                      ⚠️ Result summary not calculated yet for this exam — run "Calculate All" first, then reload the report card to add remarks.
+                    </div>
+                  )}
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 14 }}>
+                    <div>
+                      <label style={{ fontSize: 12, fontWeight: 700, color: "#64748b", display: "block", marginBottom: 6 }}>
+                        Class Teacher Remarks
+                      </label>
+                      <textarea
+                        rows={3}
+                        style={{ ...S.inp, resize: "none" }}
+                        value={rcEditForm.teacherRemarks}
+                        onChange={(e) => setRcEditForm((f) => ({ ...f, teacherRemarks: e.target.value }))}
+                        placeholder="e.g. Shows good improvement in Mathematics."
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 12, fontWeight: 700, color: "#64748b", display: "block", marginBottom: 6 }}>
+                        Principal Remarks
+                      </label>
+                      <textarea
+                        rows={3}
+                        style={{ ...S.inp, resize: "none" }}
+                        value={rcEditForm.principalRemarks}
+                        onChange={(e) => setRcEditForm((f) => ({ ...f, principalRemarks: e.target.value }))}
+                        placeholder="e.g. Keep up the good work."
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16, marginBottom: 14 }}>
+                    <div>
+                      <label style={{ fontSize: 12, fontWeight: 700, color: "#64748b", display: "block", marginBottom: 6 }}>
+                        Co-Scholastic Grades <span style={{ fontWeight: 400 }}>(e.g. Discipline: A, Sports: B+, Art: A)</span>
+                      </label>
+                      <input
+                        style={S.inp}
+                        value={rcEditForm.coScholasticGrades}
+                        onChange={(e) => setRcEditForm((f) => ({ ...f, coScholasticGrades: e.target.value }))}
+                        placeholder='Discipline: A, Sports: B+, Art: A'
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 12, fontWeight: 700, color: "#64748b", display: "block", marginBottom: 6 }}>
+                        Promotion Decision
+                      </label>
+                      <select
+                        style={S.inp}
+                        value={rcEditForm.promotedToNextClass}
+                        onChange={(e) => setRcEditForm((f) => ({ ...f, promotedToNextClass: e.target.value }))}
+                      >
+                        <option value="">— Not decided —</option>
+                        <option value="true">Promoted</option>
+                        <option value="false">Not Promoted</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={saveReportCardRemarks}
+                    disabled={rcSaving || !reportCard.summaryId}
+                    style={{ ...S.btn(), opacity: rcSaving || !reportCard.summaryId ? 0.6 : 1 }}
+                  >
+                    {rcSaving ? "Saving..." : "Save Remarks & Promotion"}
+                  </button>
                 </div>
               </div>
             )}

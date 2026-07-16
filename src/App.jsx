@@ -207,7 +207,9 @@ function App() {
         <Route path="/principal/announcements"    element={<ProtectedRoute roles={PRINCIPAL_ROLES}><Notifications /></ProtectedRoute>} />
         <Route path="/principal/profile-settings" element={<ProtectedRoute roles={PRINCIPAL_ROLES}><ProfilePage /></ProtectedRoute>} />
         <Route path="/principal/settings"         element={<ProtectedRoute roles={PRINCIPAL_ROLES}><Settings /></ProtectedRoute>} />
-
+        <Route path="/principal/results"          element={<ProtectedRoute roles={PRINCIPAL_ROLES}><Results /></ProtectedRoute>} />
+        <Route path="/principal/my-attendance"    element={<ProtectedRoute roles={PRINCIPAL_ROLES}><TeacherAttendance /></ProtectedRoute>} />
+       
         {/* ── Teacher ─────────────────────────────────────────────────────── */}
         <Route path="/teachers/dashboard"        element={<ProtectedRoute roles={TEACHER_ROLES}><TeacherDashboard /></ProtectedRoute>} />
         <Route path="/teacher/attendance"        element={<ProtectedRoute roles={TEACHER_ROLES}><TakeAttendance /></ProtectedRoute>} />

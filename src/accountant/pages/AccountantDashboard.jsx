@@ -26,10 +26,10 @@ const postSendReminders = (schoolId, body = {}) =>
   API.post(`/accountant/dashboard/send-reminders`, { reminderType: "ALL", ...body }, { params: { schoolId } }).then((r) => r.data);
 
 const fetchPendingUpiApi = (schoolId) =>
-  API.get(`/api/payments/pending-upi?schoolId=${schoolId}`).then((r) => r.data);
+  API.get(`/payments/pending-upi?schoolId=${schoolId}`).then((r) => r.data);
 
 const verifyUpiApi = (paymentId, action) =>
-  API.post(`/api/payments/verify-upi/${paymentId}?action=${action}`).then((r) => r.data);
+  API.post(`/payments/verify-upi/${paymentId}?action=${action}`).then((r) => r.data);
 
 const fetchFeeLedgerApi = (schoolId) =>
   API.get(`/fees/students?schoolId=${schoolId}`).then((r) => r.data);
@@ -42,7 +42,7 @@ const processPaymentApi = (studentFeeId, amount) =>
 
 // ─── Formatters ──────────────────────────────────────────────────────────────
 const fmtINR = (val) => {
-  if (val == null) return "—";
+  if (val == null) return "—"; 
   if (val >= 1_00_00_000) return `₹${(val / 1_00_00_000).toFixed(1)} Cr`;
   if (val >= 1_00_000)    return `₹${(val / 1_00_000).toFixed(1)} L`;
   return `₹${Number(val).toLocaleString("en-IN")}`;

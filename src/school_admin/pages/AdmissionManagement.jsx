@@ -9,6 +9,7 @@ import {
   AlertCircle, Loader2, ChevronDown, Wallet, Zap
 } from "lucide-react";
 import { admissionService } from "../../common/services/api";
+import API from "../../common/services/api";
 import DirectAdmissionModal from "./DirectAdmissionModal";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -20,6 +21,7 @@ export default function AdmissionManagement() {
 
   const [showDirectModal, setShowDirectModal] = useState(false);
   const [inquiries, setInquiries]         = useState([]);
+  const [classrooms, setClassrooms]       = useState([]);
   const [stats, setStats]                 = useState({ total: 0, pending: 0, approved: 0, rejected: 0 });
   const [loading, setLoading]             = useState(true);
   const [filterStatus, setFilterStatus]   = useState("");
@@ -32,7 +34,10 @@ export default function AdmissionManagement() {
   const [modalMode, setModalMode]             = useState(null); // "status" | "grant"
 
   // Status update form
-  const [statusForm, setStatusForm]   = useState({ status: "", reviewerRemarks: "", interviewDate: "" });
+  const [statusForm, setStatusForm]   = useState({
+    status: "", reviewerRemarks: "", interviewDate: "",
+    nextFollowUpDate: "", nextFollowUpRemarks: "", meritRank: "",
+  });
   const [statusLoading, setStatusLoading] = useState(false);
   const [statusError, setStatusError]     = useState("");
 
@@ -44,6 +49,11 @@ export default function AdmissionManagement() {
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
   useEffect(() => { fetchData(); }, [filterStatus, page]);
+  useEffect(() => {
+    API.get("/school-admin/getClassRoom")
+      .then((res) => setClassrooms(res.data?.content || []))
+      .catch(() => setClassrooms([]));
+  }, []);
 
   const fetchData = async () => {
     try {
@@ -69,6 +79,9 @@ export default function AdmissionManagement() {
       status: inquiry.status,
       reviewerRemarks: inquiry.reviewerRemarks || "",
       interviewDate: inquiry.interviewDate || "",
+      nextFollowUpDate: inquiry.nextFollowUpDate || "",
+      nextFollowUpRemarks: inquiry.nextFollowUpRemarks || "",
+      meritRank: inquiry.meritRank ?? "",
     });
     setStatusError("");
     setModalMode("status");
@@ -94,7 +107,13 @@ export default function AdmissionManagement() {
     setStatusLoading(true);
     setStatusError("");
     try {
-      await admissionService.updateStatus(selectedInquiry.id, statusForm);
+      const payload = {
+        ...statusForm,
+        meritRank: statusForm.meritRank === "" ? undefined : Number(statusForm.meritRank),
+        nextFollowUpDate: statusForm.nextFollowUpDate || undefined,
+        nextFollowUpRemarks: statusForm.nextFollowUpRemarks || undefined,
+      };
+      await admissionService.updateStatus(selectedInquiry.id, payload);
       closeModal();
       fetchData();
     } catch (err) {
@@ -108,7 +127,7 @@ export default function AdmissionManagement() {
   const handleGrantAdmission = async (e) => {
     e.preventDefault();
     if (!grantForm.classRoomId) {
-      setGrantError("Please enter a Classroom ID.");
+      setGrantError("Please select a classroom.");
       return;
     }
     setGrantLoading(true);
@@ -357,6 +376,40 @@ export default function AdmissionManagement() {
                 />
               </Field>
 
+              <Field label="Admission Merit Rank" hint="Optional — if test/merit-based admission">
+                <input
+                  type="number"
+                  min="1"
+                  value={statusForm.meritRank}
+                  onChange={e => setStatusForm(f => ({ ...f, meritRank: e.target.value }))}
+                  placeholder="e.g. 5"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-indigo-400/30 text-sm"
+                />
+              </Field>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Next Follow-up Date">
+                  <div className="relative">
+                    <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="date"
+                      value={statusForm.nextFollowUpDate}
+                      onChange={e => setStatusForm(f => ({ ...f, nextFollowUpDate: e.target.value }))}
+                      className="w-full pl-9 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400/30 text-sm"
+                    />
+                  </div>
+                </Field>
+                <Field label="Follow-up Notes">
+                  <input
+                    type="text"
+                    value={statusForm.nextFollowUpRemarks}
+                    onChange={e => setStatusForm(f => ({ ...f, nextFollowUpRemarks: e.target.value }))}
+                    placeholder="e.g. Call parent again"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-indigo-400/30 text-sm"
+                  />
+                </Field>
+              </div>
+
               {statusError && <ErrorBox message={statusError} />}
 
               <div className="flex gap-3 pt-2">
@@ -443,15 +496,20 @@ export default function AdmissionManagement() {
             ) : (
               /* ── Form State ── */
               <form onSubmit={handleGrantAdmission} className="mt-6 space-y-5">
-                <Field label="Classroom ID *" hint="Enter the numeric ID of the target classroom">
-                  <input
-                    type="number"
-                    placeholder="e.g. 7"
+                <Field label="Classroom *" hint="Select the target class and section">
+                  <select
                     value={grantForm.classRoomId}
                     onChange={e => setGrantForm(f => ({ ...f, classRoomId: e.target.value }))}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-indigo-400/30 text-sm"
                     required
-                  />
+                  >
+                    <option value="">Select classroom</option>
+                    {classrooms.map((cls) => (
+                      <option key={cls.id} value={cls.id}>
+                        Grade {cls.grade}{cls.section ? ` - ${cls.section}` : ""}
+                      </option>
+                    ))}
+                  </select>
                 </Field>
 
                 <div className="grid grid-cols-2 gap-4">

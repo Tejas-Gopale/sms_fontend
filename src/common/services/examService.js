@@ -154,6 +154,22 @@ export const resultService = {
     API.put(`/result/update/${resultId}`, data),
 
   /**
+   * GET /result/report-card?studentId=&examId=
+   * Full printable report card: subjects, rank, attendance%, remarks, promotion.
+   * Returns: ReportCardResponse
+   */
+  getReportCard: (studentId, examId) =>
+    API.get("/result/report-card", { params: { studentId, examId } }),
+
+  /**
+   * PUT /result/summary/{summaryId}
+   * Body: { teacherRemarks?, principalRemarks?, coScholasticGrades?, promotedToNextClass? }
+   * Class teacher / principal adds report-card remarks and promotion decision.
+   */
+  updateSummary: (summaryId, data) =>
+    API.put(`/result/summary/${summaryId}`, data),
+
+  /**
    * POST /result/recalculate-all
    * One-time migration helper — builds ResultSummary for every existing
    * result row in this school. Idempotent.

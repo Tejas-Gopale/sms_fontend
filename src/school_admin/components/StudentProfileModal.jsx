@@ -315,6 +315,64 @@ export default function StudentProfileModal({ student, classrooms, onClose, onRe
                   )}
                 </div>
 
+                {/* ── Compliance, Health & Address (read-only — set at admission time) ── */}
+                <div>
+                  <div className="flex items-center justify-between border-b pb-2 mb-4">
+                    <SectionTitle noMargin>🩺 Compliance, Health & Address</SectionTitle>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                      student.studentStatus === "ACTIVE" ? "bg-green-100 text-green-700" :
+                      student.studentStatus === "TC_ISSUED" ? "bg-amber-100 text-amber-700" :
+                      student.studentStatus === "ALUMNI" ? "bg-slate-200 text-slate-600" :
+                      "bg-red-100 text-red-700"
+                    }`}>
+                      {student.studentStatus || "ACTIVE"}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Field label="Blood Group">
+                      <input value={student.bloodGroup || "—"} disabled className={inputCls(true)} />
+                    </Field>
+                    <Field label="Category">
+                      <input value={student.category || "—"} disabled className={inputCls(true)} />
+                    </Field>
+                    <Field label="Aadhar Number">
+                      <input value={student.aadharNumber || "—"} disabled className={inputCls(true)} />
+                    </Field>
+                    <Field label="Address">
+                      <input value={student.address || "—"} disabled className={inputCls(true)} />
+                    </Field>
+                    <Field label="City">
+                      <input value={student.city || "—"} disabled className={inputCls(true)} />
+                    </Field>
+                    <Field label="Pincode">
+                      <input value={student.pincode || "—"} disabled className={inputCls(true)} />
+                    </Field>
+                    <Field label="Emergency Contact">
+                      <input value={student.emergencyContactName || "—"} disabled className={inputCls(true)} />
+                    </Field>
+                    <Field label="Emergency Phone">
+                      <input value={student.emergencyContactPhone || "—"} disabled className={inputCls(true)} />
+                    </Field>
+                    <Field label="Medical Conditions">
+                      <input value={student.medicalConditions || "—"} disabled className={inputCls(true)} />
+                    </Field>
+                    <Field label="Previous School">
+                      <input value={student.previousSchool || "—"} disabled className={inputCls(true)} />
+                    </Field>
+                    <Field label="Previous TC Number">
+                      <input value={student.previousSchoolTcNumber || "—"} disabled className={inputCls(true)} />
+                    </Field>
+                    {student.studentStatus === "TC_ISSUED" && (
+                      <Field label="TC Issued (this school)">
+                        <input value={`${student.tcNumber || "—"} • ${student.tcIssueDate || ""}`} disabled className={inputCls(true)} />
+                      </Field>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400 italic mt-3">
+                    * These fields are captured at admission time. Contact backend/admission team to correct.
+                  </p>
+                </div>
+
               </motion.div>
             )}
           </AnimatePresence>

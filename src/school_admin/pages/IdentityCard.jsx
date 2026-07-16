@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState } from "react";
 import SchoolAdminSidebar from "../components/SchoolAdminSidebar";
 import { templateService, renderService } from "../../common/services/idCardService";
+import API from "../../common/services/api";
 import {
   CreditCard, Settings2, Printer, RefreshCcw, Plus, Trash2,
   Pencil, CheckCircle, X, Users, GraduationCap, Briefcase,
@@ -308,6 +309,7 @@ export default function IdentityCard() {
   // Print tab state
   const [holderType, setHolderType] = useState("STUDENT");
   const [classRoomId, setClassRoomId] = useState("");
+  const [classrooms, setClassrooms] = useState([]);
   const [previewCards, setPreviewCards] = useState([]);
   const [previewLoading, setPreviewLoading] = useState(false);
 
@@ -339,6 +341,11 @@ export default function IdentityCard() {
   };
 
   useEffect(() => { loadTemplates(); }, []);
+  useEffect(() => {
+    API.get("/school-admin/getClassRoom")
+      .then((res) => setClassrooms(res.data?.content || []))
+      .catch(() => setClassrooms([]));
+  }, []);
 
   // ── Template CRUD ────────────────────────────────────────────────────────────
   const openCreate = () => {
@@ -489,15 +496,20 @@ export default function IdentityCard() {
               {holderType === "STUDENT" && (
                 <div style={{ minWidth: 200 }}>
                   <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 5, textTransform: "uppercase" }}>
-                    Filter by Classroom ID (optional)
+                    Filter by Classroom (optional)
                   </label>
-                  <input
-                    type="number"
-                    placeholder="e.g. 5  (blank = sab)"
+                  <select
                     value={classRoomId}
                     onChange={(e) => setClassRoomId(e.target.value)}
                     style={{ ...S.inp, maxWidth: 220 }}
-                  />
+                  >
+                    <option value="">All Classrooms</option>
+                    {classrooms.map((cls) => (
+                      <option key={cls.id} value={cls.id}>
+                        Grade {cls.grade}{cls.section ? ` - ${cls.section}` : ""}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
 
