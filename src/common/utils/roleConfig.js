@@ -139,6 +139,8 @@ export const ROLE_MENU = {
         { name: "Library",    icon: "Library",  path: "/school-admin/library" },
         { name: "Transport",  icon: "Bus",      path: "/school-admin/transport" },
         { name: "Hostel",     icon: "Home",     path: "/school-admin/hostel" },
+        { name: "Housekeeping", icon: "ClipboardList", path: "/school-admin/housekeeping" },
+        { name: "Housekeeping", icon: "ClipboardList", path: "/school-admin/housekeeping" },
         // { name: "Inventory",  icon: "Package",  path: "/school-admin/inventory" },
         // { name: "Health",     icon: "HeartPulse",path: "/school-admin/health" },
       ],
@@ -222,6 +224,7 @@ export const ROLE_MENU = {
         // 12
         { name: "My Salary",      icon: "IndianRupee", path: "/teacher/salary" },
         { name: "Notifications",  icon: "Bell",        path: "/teacher/notifications" },
+        { name: "Report Issue",   icon: "AlertCircle", path: "/raise-complaint" },
         { name: "Profile",        icon: "UserCircle",  path: "/teacher/profile-settings" },
         { name: "Settings",       icon: "Settings",    path: "/teacher/settings" },
       ],
@@ -257,6 +260,7 @@ export const ROLE_MENU = {
       items: [
         { name: "My Salary",      icon: "IndianRupee", path: "/teacher/salary" },
         { name: "Notifications",  icon: "Bell",        path: "/teacher/notifications" },
+        { name: "Report Issue",   icon: "AlertCircle", path: "/raise-complaint" },
         { name: "Profile",        icon: "UserCircle",  path: "/teacher/profile-settings" },
         { name: "Settings",       icon: "Settings",    path: "/teacher/settings" },
       ],
@@ -274,9 +278,11 @@ export const ROLE_MENU = {
     {
       group: "Counseling",
       items: [
+        { name: "Referrals",       icon: "AlertCircle",    path: "/counselor/referrals" },
         { name: "Session Records", icon: "ClipboardList",  path: "/counselor/sessions" },
         { name: "Student Remarks", icon: "MessageSquare",  path: "/counselor/remarks" },
         { name: "Notifications",   icon: "Bell",           path: "/counselor/notifications" },
+        { name: "Report Issue",    icon: "AlertCircle",    path: "/raise-complaint" },
       ],
     },
     {
@@ -368,6 +374,7 @@ export const ROLE_MENU = {
     { name: "Salary Payroll",    icon: "Banknote",        path: "/school-admin/payroll" },
     { name: "Salary Structures", icon: "Layers",          path: "/accountant/salary-structure" }, // ← ADD
     { name: "Reports",           icon: "FileText",        path: "/accountant/reports" },
+    { name: "Report Issue",      icon: "AlertCircle",     path: "/raise-complaint" },
   ],
 },
     {
@@ -388,6 +395,7 @@ export const ROLE_MENU = {
         { name: "Collect Fees",   icon: "IndianRupee",     path: "/cashier/collect-fees" },
         { name: "Receipts",       icon: "Receipt",         path: "/cashier/receipts" },
         { name: "Daily Report",   icon: "FileText",        path: "/cashier/daily-report" },
+        { name: "Report Issue",  icon: "AlertCircle",     path: "/raise-complaint" },
       ],
     },
     {
@@ -410,6 +418,7 @@ export const ROLE_MENU = {
         { name: "Drivers",    icon: "UserCheck",       path: "/transport-manager/drivers" },
         { name: "Students",   icon: "Users",           path: "/transport-manager/students" },
         { name: "Tracking",   icon: "Navigation",      path: "/transport-manager/tracking" },
+        { name: "Boarding Log", icon: "ClipboardCheck",path: "/transport-manager/boarding" },
       ],
     },
     {
@@ -428,6 +437,7 @@ export const ROLE_MENU = {
       items: [
         { name: "Dashboard",    icon: "LayoutDashboard", path: "/bus-driver/dashboard" },
         { name: "My Route",     icon: "MapPin",          path: "/bus-driver/route" },
+        { name: "Boarding",     icon: "ClipboardCheck",  path: "/bus-driver/boarding" },
         { name: "Students",     icon: "Users",           path: "/bus-driver/students" },
         { name: "Attendance",   icon: "ClipboardCheck",  path: "/bus-driver/attendance" },
       ],
@@ -451,6 +461,7 @@ export const ROLE_MENU = {
         { name: "Issue / Return", icon: "ArrowLeftRight",path: "/librarian/issue-return" },
         { name: "Members",      icon: "Users",           path: "/librarian/members" },
         { name: "Reports",      icon: "FileText",        path: "/librarian/reports" },
+        { name: "Report Issue", icon: "AlertCircle",     path: "/raise-complaint" },
       ],
     },
     {
@@ -471,6 +482,7 @@ export const ROLE_MENU = {
         { name: "Visitor Management",icon: "Eye",             path: "/receptionist/visitors" },
         { name: "Enquiries",         icon: "MessageSquare",   path: "/receptionist/enquiries" },
         { name: "Notifications",     icon: "Bell",            path: "/receptionist/notifications" },
+        { name: "Report Issue",      icon: "AlertCircle",     path: "/raise-complaint" },
       ],
     },
     {
@@ -498,6 +510,7 @@ export const ROLE_MENU = {
       group: "Personal",
       items: [
         { name: "My Attendance", icon: "CalendarDays", path: "/nurse/my-attendance" },
+        { name: "Report Issue",  icon: "AlertCircle",  path: "/raise-complaint" },
         { name: "Profile",       icon: "UserCircle",   path: "/nurse/profile-settings" },
         { name: "Settings",      icon: "Settings",     path: "/nurse/settings" },
       ],
@@ -517,6 +530,7 @@ export const ROLE_MENU = {
       group: "Personal",
       items: [
         { name: "My Attendance", icon: "CalendarDays", path: "/security/my-attendance" },
+        { name: "Report Issue",  icon: "AlertCircle",  path: "/raise-complaint" },
         { name: "Profile",       icon: "UserCircle",   path: "/security/profile-settings" },
         { name: "Settings",      icon: "Settings",     path: "/security/settings" },
       ],
@@ -569,6 +583,7 @@ export const ROLE_MENU = {
         { name: "System Logs",  icon: "FileText",        path: "/it-admin/logs" },
         { name: "Settings",     icon: "Settings",        path: "/it-admin/settings" },
         { name: "Integrations", icon: "Plug",            path: "/it-admin/integrations" },
+        { name: "Report Issue", icon: "AlertCircle",     path: "/raise-complaint" },
       ],
     },
     {

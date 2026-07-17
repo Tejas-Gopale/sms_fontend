@@ -1,9 +1,10 @@
 // src/counselor/pages/CounselorDashboard.jsx
 // Role: COUNSELOR
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import RoleSidebar from "../../common/components/RoleSidebar";
 import { getUserData } from "../../common/utils/tokenStorage";
+import { counselingService } from "../../common/services/counselingService";
 import { Users, MessageSquare, ClipboardList, AlertTriangle, HeartPulse, Calendar } from "lucide-react";
 
 const StatCard = ({ icon: Icon, label, value, color = "blue" }) => (
@@ -21,12 +22,18 @@ const StatCard = ({ icon: Icon, label, value, color = "blue" }) => (
 export default function CounselorDashboard() {
   const userData    = getUserData();
   const displayName = userData?.fullName || "Counselor";
+  const schoolId     = userData?.schoolId ? Number(userData.schoolId) : Number(localStorage.getItem("schoolId"));
 
-  const recentSessions = [
-    { student: "Ananya Verma",  class: "10-B", date: "24 May", issue: "Academic stress",   status: "Ongoing" },
-    { student: "Rohan Das",     class: "9-A",  date: "23 May", issue: "Peer conflict",      status: "Resolved" },
-    { student: "Sana Sheikh",   class: "11-C", date: "22 May", issue: "Anxiety",            status: "Follow-up" },
-  ];
+  const [stats, setStats] = useState(null);
+  const [upcoming, setUpcoming] = useState([]);
+
+  useEffect(() => {
+    if (!schoolId) return;
+    counselingService.getStats(schoolId).then((res) => setStats(res.data)).catch(() => {});
+    counselingService.getUpcomingSessions(schoolId)
+      .then((res) => setUpcoming(Array.isArray(res.data) ? res.data.slice(0, 5) : []))
+      .catch(() => {});
+  }, [schoolId]);
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
@@ -40,63 +47,43 @@ export default function CounselorDashboard() {
 
         <div className="p-8 space-y-6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-            <StatCard icon={Users}        label="Students Assigned"   value="284"   color="blue" />
-            <StatCard icon={MessageSquare}label="Sessions This Month" value="18"    color="green" />
-            <StatCard icon={AlertTriangle}label="High-Risk Students"  value="5"     color="red" />
-            <StatCard icon={ClipboardList}label="Pending Follow-ups"  value="8"     color="yellow" />
-          </div>
-
-          {/* Recent Sessions */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <h2 className="font-semibold text-gray-800 mb-4">Recent Counseling Sessions</h2>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100">
-                  {["Student", "Class", "Date", "Issue", "Status"].map((h) => (
-                    <th key={h} className="text-left py-2 text-gray-400 font-medium text-xs uppercase">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {recentSessions.map((s, i) => (
-                  <tr key={i} className="border-b border-gray-50 hover:bg-gray-50">
-                    <td className="py-2.5 font-medium text-gray-800">{s.student}</td>
-                    <td className="py-2.5 text-gray-600">{s.class}</td>
-                    <td className="py-2.5 text-gray-600">{s.date}</td>
-                    <td className="py-2.5 text-gray-600">{s.issue}</td>
-                    <td className="py-2.5">
-                      <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                        s.status === "Resolved"   ? "bg-green-100 text-green-700" :
-                        s.status === "Ongoing"    ? "bg-blue-100 text-blue-700"   :
-                                                    "bg-yellow-100 text-yellow-700"
-                      }`}>
-                        {s.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <StatCard icon={ClipboardList}label="Pending Referrals"   value={stats?.pendingReferrals ?? "-"}     color="yellow" />
+            <StatCard icon={MessageSquare}label="Sessions This Month" value={stats?.sessionsThisMonth ?? "-"}    color="green" />
+            <StatCard icon={Calendar}     label="Upcoming Sessions"   value={stats?.upcomingSessions ?? "-"}     color="blue" />
+            <StatCard icon={AlertTriangle}label="Critical Referrals"  value={stats?.criticalReferralsOpen ?? "-"}color="red" />
           </div>
 
           {/* Upcoming sessions */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <h2 className="font-semibold text-gray-800 mb-3">Today's Schedule</h2>
-            <div className="space-y-2">
-              {[
-                { time: "10:00 AM", student: "Meera Joshi",   class: "8-A", type: "Initial Session" },
-                { time: "11:30 AM", student: "Arjun Nair",    class: "12-B",type: "Follow-up" },
-                { time: "02:00 PM", student: "Kavya Rao",     class: "9-C", type: "Group Session" },
-              ].map((s, i) => (
-                <div key={i} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
-                  <Calendar size={14} className="text-yellow-500 flex-shrink-0" />
-                  <span className="text-sm font-medium text-gray-700 w-20">{s.time}</span>
-                  <span className="text-sm text-gray-800 font-medium">{s.student}</span>
-                  <span className="text-xs text-gray-500">{s.class}</span>
-                  <span className="ml-auto text-xs text-blue-600 font-medium">{s.type}</span>
-                </div>
-              ))}
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="font-semibold text-gray-800">Upcoming Sessions</h2>
+              <a href="/counselor/sessions" className="text-xs text-yellow-600 font-medium">View all →</a>
             </div>
+            <div className="space-y-2">
+              {upcoming.length === 0 ? (
+                <p className="text-sm text-gray-400 py-4 text-center">No upcoming sessions scheduled</p>
+              ) : (
+                upcoming.map((s) => (
+                  <div key={s.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                    <Calendar size={14} className="text-yellow-500 flex-shrink-0" />
+                    <span className="text-sm font-medium text-gray-700 w-40">
+                      {s.sessionDate ? new Date(s.sessionDate).toLocaleString() : "-"}
+                    </span>
+                    <span className="text-sm text-gray-800 font-medium">{s.studentName}</span>
+                    <span className="ml-auto text-xs text-blue-600 font-medium">{s.reasonForSession || "-"}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <a href="/counselor/referrals" className="px-4 py-2 text-sm bg-yellow-500 text-gray-900 font-medium rounded-lg hover:bg-yellow-400 transition-colors">
+              View Referrals
+            </a>
+            <a href="/counselor/sessions" className="px-4 py-2 text-sm bg-white border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors">
+              Session Records
+            </a>
           </div>
         </div>
       </main>

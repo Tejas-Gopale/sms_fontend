@@ -1,8 +1,11 @@
 // src/role_dashboards/MinorRoleDashboards.jsx
 // Dashboards for: RECEPTIONIST, NURSE, SECURITY, HOUSEKEEPING, CANTEEN_STAFF, IT_ADMIN
 
+import { useEffect, useState } from "react";
 import RoleSidebar from "../common/components/RoleSidebar";
 import { getUserData } from "../common/utils/tokenStorage";
+import { healthService } from "../common/services/healthService";
+import { housekeepingService } from "../common/services/housekeepingService";
 import {
   Eye, Users, MessageSquare, Bell, HeartPulse, Package, AlertCircle,
   Shield, ClipboardList, UtensilsCrossed, Settings, Plug, FileText,
@@ -105,44 +108,51 @@ export function ReceptionistDashboard() {
 export function NurseDashboard() {
   const userData    = getUserData();
   const displayName = userData?.fullName || "Nurse";
+  const schoolId     = userData?.schoolId ? Number(userData.schoolId) : Number(localStorage.getItem("schoolId"));
 
-  const recentIncidents = [
-    { student: "Ananya Verma", class: "10-A", complaint: "Headache",    time: "9:30 AM",  action: "Rest + Medicine" },
-    { student: "Rohan Das",    class: "9-B",  complaint: "Fever",       time: "10:15 AM", action: "Sent Home"       },
-    { student: "Sana Sheikh",  class: "11-C", complaint: "Stomach Pain",time: "11:45 AM", action: "Rest"            },
-  ];
+  const [stats, setStats] = useState(null);
+  const [todayVisits, setTodayVisits] = useState([]);
+
+  useEffect(() => {
+    if (!schoolId) return;
+    healthService.getStats(schoolId).then((res) => setStats(res.data)).catch(() => {});
+    healthService.getTodayVisits(schoolId).then((res) => setTodayVisits(Array.isArray(res.data) ? res.data : [])).catch(() => {});
+  }, [schoolId]);
 
   return (
     <DashboardShell title="Health Room Dashboard" subtitle={`Welcome, ${displayName}`}>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-        <StatCard icon={HeartPulse}   label="Visits Today"         value="7"   color="red"    />
-        <StatCard icon={AlertCircle}  label="Sent Home"            value="1"   color="yellow" />
-        <StatCard icon={Package}      label="Med Stock (Critical)"  value="3"   color="red"    />
-        <StatCard icon={Users}        label="Health Records"        value="842" color="blue"   />
+        <StatCard icon={HeartPulse}   label="Visits Today"          value={stats?.visitsToday ?? "-"}       color="red"    />
+        <StatCard icon={AlertCircle}  label="Pending Follow-ups"    value={stats?.pendingFollowUps ?? "-"}  color="yellow" />
+        <StatCard icon={Package}      label="Referred Cases"        value={stats?.referredCount ?? "-"}     color="orange" />
+        <StatCard icon={Users}        label="Health Records"        value={stats?.totalStudentsWithRecords ?? "-"} color="blue" />
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
         <h2 className="font-semibold text-gray-800 mb-4">Today's Health Incidents</h2>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100">
-              {["Student", "Class", "Complaint", "Time", "Action Taken"].map((h) => (
-                <th key={h} className="text-left py-2 text-gray-400 font-medium text-xs uppercase">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {recentIncidents.map((r, i) => (
-              <tr key={i} className="border-b border-gray-50 hover:bg-gray-50">
-                <td className="py-2.5 font-medium text-gray-800">{r.student}</td>
-                <td className="py-2.5 text-gray-500">{r.class}</td>
-                <td className="py-2.5 text-gray-700">{r.complaint}</td>
-                <td className="py-2.5 text-gray-500">{r.time}</td>
-                <td className="py-2.5 text-gray-700">{r.action}</td>
+        {todayVisits.length === 0 ? (
+          <p className="text-sm text-gray-400 py-4 text-center">No visits logged today</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100">
+                {["Student", "Symptoms", "Time", "Status"].map((h) => (
+                  <th key={h} className="text-left py-2 text-gray-400 font-medium text-xs uppercase">{h}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {todayVisits.map((r) => (
+                <tr key={r.id} className="border-b border-gray-50 hover:bg-gray-50">
+                  <td className="py-2.5 font-medium text-gray-800">{r.studentName}</td>
+                  <td className="py-2.5 text-gray-700">{r.symptoms}</td>
+                  <td className="py-2.5 text-gray-500">{r.visitTime ? new Date(r.visitTime).toLocaleTimeString() : "-"}</td>
+                  <td className="py-2.5 text-gray-700">{r.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       <QuickActions links={[
@@ -203,6 +213,19 @@ export function StaffDashboard() {
   const displayName = userData?.fullName || "Staff";
   const role        = (userData?.roles || [])[0];
   const isCanteen   = role === "CANTEEN_STAFF";
+  const schoolId    = userData?.schoolId ? Number(userData.schoolId) : Number(localStorage.getItem("schoolId"));
+
+  const [myTasks, setMyTasks] = useState([]);
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    if (isCanteen || !schoolId) return;
+    housekeepingService.getMyTasks(schoolId).then((res) => setMyTasks(Array.isArray(res.data) ? res.data : [])).catch(() => {});
+    housekeepingService.getStats(schoolId).then((res) => setStats(res.data)).catch(() => {});
+  }, [schoolId, isCanteen]);
+
+  const pendingCount = myTasks.filter((t) => t.status === "PENDING" || t.status === "IN_PROGRESS").length;
+  const doneCount = myTasks.filter((t) => t.status === "COMPLETED").length;
 
   return (
     <DashboardShell
@@ -217,25 +240,36 @@ export function StaffDashboard() {
           </>
         ) : (
           <>
-            <StatCard icon={ClipboardList}   label="Tasks Assigned"  value="8"    color="blue"   />
-            <StatCard icon={ClipboardList}   label="Tasks Done"      value="5"    color="green"  />
+            <StatCard icon={ClipboardList}   label="Tasks Pending"   value={pendingCount}  color="blue"   />
+            <StatCard icon={ClipboardList}   label="Tasks Done"      value={doneCount}     color="green"  />
           </>
         )}
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
         <h2 className="font-semibold text-gray-800 mb-3">My Tasks Today</h2>
-        <div className="space-y-2">
-          {(isCanteen
-            ? ["Prepare breakfast menu", "Restock beverages", "Clean canteen area", "Prepare lunch menu"]
-            : ["Clean Block A classrooms", "Mop corridors", "Clean restrooms", "Refill soap dispensers"]
-          ).map((task, i) => (
-            <div key={i} className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-lg">
-              <input type="checkbox" className="accent-yellow-500" />
-              <span className="text-sm text-gray-700">{task}</span>
-            </div>
-          ))}
-        </div>
+        {isCanteen ? (
+          <div className="space-y-2">
+            {["Prepare breakfast menu", "Restock beverages", "Clean canteen area", "Prepare lunch menu"].map((task, i) => (
+              <div key={i} className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-lg">
+                <input type="checkbox" className="accent-yellow-500" />
+                <span className="text-sm text-gray-700">{task}</span>
+              </div>
+            ))}
+          </div>
+        ) : myTasks.length === 0 ? (
+          <p className="text-sm text-gray-400 py-4 text-center">No tasks assigned</p>
+        ) : (
+          <div className="space-y-2">
+            {myTasks.slice(0, 6).map((t) => (
+              <div key={t.id} className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-lg">
+                <input type="checkbox" checked={t.status === "COMPLETED"} readOnly className="accent-yellow-500" />
+                <span className="text-sm text-gray-700 flex-1">{t.title} — {t.location}</span>
+                <span className="text-xs text-gray-400">{t.status}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <QuickActions links={
